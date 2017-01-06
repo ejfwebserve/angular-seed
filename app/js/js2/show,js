@@ -1,0 +1,14 @@
+/**
+ * Shows the component
+ * @chainable
+ */
+function showit(this) {
+    return this.setVisible(true);
+}
+/**
+ * Highlights the component temporarily with yellow color.
+ * @chainable
+ */
+function highlight() {
+    return this.setBackground("yellow").wait(1000).clear();
+}

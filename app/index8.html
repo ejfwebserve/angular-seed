@@ -1,0 +1,101 @@
+<!doctype html>
+<head>
+    <meta charset="utf-8">
+
+    <title>Google Phone Gallery</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js">
+    </script>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.8/angular.min.js">
+    </script>
+
+</head>
+<body>
+
+
+    <button>tett</button>
+    <div ng-app="myApp" ng-controller="namesCtrl">
+
+        <h3> Weekly News: </h3>
+        <input type="checkbox" ng-model="myForm" autofocus="yes">
+        <!-- ng-true-value="yes" ng-false-value="no"  autofocus="yes"> -->
+
+        <div ng-show="myForm" ng-include="'email-blast.html'"></div>
+
+
+
+        <p>Type a letter in the input field:</p>
+        <p><input type="text" ng-model="test"></p>
+
+
+        <ul>
+            <li ng-repeat="y in names | filter:test">
+
+                <button ng-click="myFunc()" ng-show="myForm">{{ y }}</button>
+
+            </li>
+        </ul>
+        <h2>tryit div 0</h2>
+
+        <div id="div0">
+        </div>
+
+        <h2>tryit div 1</h2>
+
+        <div id="div1">
+        </div>
+    </div>
+
+    <script>
+    $("#div1").load('ministry.html #subpage001 div.member_attach_person > h2.member_attach_name');
+
+    angular.module('myApp', []).controller('namesCtrl', function($scope) {
+        var y=[];
+        // var $scope.link =[];
+        // var $scope.names =[];
+        // Check browser support
+
+
+        var x = $("div > h2 >a").toArray();
+        //$("button").click(funct00ion(){
+
+        console.log(x);
+        $("#div0").append("try it: " + x.length);
+        for (i = 0; i< x.length; i++) {
+            y[i]=x[i].innerHTML;
+
+            // $scope.names[i]=x[i].innerHTML;
+            // $scope.links[i]=x[i].children();
+        }
+        $scope.names = y;
+
+        console.log($scope.names.length);
+        console.log($scope.names);
+        var x =         [
+        'Jani',
+        'Carl',
+        'Margareth',
+        'Hege',
+        'Joe',
+        'Gustav',
+        'Birgit',
+        'Mary',
+        'Kai'
+        ];
+
+
+// select a person
+    $scope.selectEmail = function() {
+        $scope.count++;
+    }
+    });
+    // $.data();
+    // $scope.names = $.data();
+    // $("h2").forEach(function(index) {
+    //     console.log(index + ": " + $(this).text());
+    //     $("#div0").append(x[0].length);
+    // });
+</script>
+
+</body>
+</html
