@@ -1,0 +1,201 @@
+/*8/7/15*/
+
+/* CS RATING AND FEEDBACK */
+
+.cs_rating-feedback-controls,
+.cs_utility-share-controls,
+.cs_utility-print-control {
+    margin: 0;
+    padding: 11px;
+    display: inline-block;
+}
+
+.cs_rating-feedback-controls a {
+    -webkit-transition: all 500ms cubic-bezier(0.190, 1.000, 0.220, 1.000);
+    -moz-transition: all 500ms cubic-bezier(0.190, 1.000, 0.220, 1.000);
+    -o-transition: all 500ms cubic-bezier(0.190, 1.000, 0.220, 1.000);
+    transition: all 500ms cubic-bezier(0.190, 1.000, 0.220, 1.000);
+    /* easeOutExpo */
+}
+
+.cs_rating-feedback-controls a:hover {
+    background-color: #6b8199;
+    color: white;
+}
+
+.cs_rating-feedback-controls a:active {
+    background-color: #181f26;
+    color: white;
+}
+
+.cs_rating-feedback-controls.border-top {
+    border-top: 2px solid #E3E8E9;
+}
+
+.cs_rating-feedback-controls p {
+    float: left;
+    font-size: 12px;
+    text-align: right;
+    padding: 0;
+    display: table-cell;
+    vertical-align: middle;
+    margin-right: 1em
+}
+
+.cs_rating-feedback-controls a.vote-button,
+.cs_rating-feedback-controls a.disabled:hover {
+    text-decoration: none;
+    position: relative;
+    float: left;
+    height: 28px;
+    cursor: pointer;
+    margin: 0 .5em 0 0;
+}
+
+.cs_rating-feedback-controls a.selected,
+.cs_rating-feedback-controls a.selected:hover,
+.cs_rating-feedback-controls a.disabled,
+.cs_rating-feedback-controls a.disabled:hover {
+    cursor: pointer;
+}
+
+.cs_rating-feedback-controls > a.selected,
+.cs_rating-feedback-controls > a:hover {}
+
+
+/* THUMBS UP*/
+
+.cs_rating-feedback-controls a span.icon.thumbs-up,
+.cs_rating-feedback-controls a.disabled:hover span.icon.thumbs-up {}
+
+.cs_rating-feedback-controls a.selected span.icon.thumbs-up,
+.cs_rating-feedback-controls a:hover span.icon.thumbs-up {}
+
+.cs_rating-feedback-controls a.small span.icon.thumbs-up,
+.cs_rating-feedback-controls a.small:hover span.icon.thumbs-up {}
+
+
+/* THUMBS DOWN*/
+
+.cs_rating-feedback-controls a span.icon.thumbs-down,
+.cs_rating-feedback-controls a.disabled:hover span.icon.thumbs-down {}
+
+.cs_rating-feedback-controls a.selected span.icon.thumbs-down,
+.cs_rating-feedback-controls a:hover span.icon.thumbs-down {}
+
+.cs_rating-feedback-controls a.small span.icon.thumbs-down,
+.cs_rating-feedback-controls a.small:hover span.icon.thumbs-down {}
+
+.cs_rating-feedback-controls #feedback-number-pos:empty,
+.cs_rating-feedback-controls #feedback-number-neg:empty {
+    margin: 5px;
+}
+
+
+/* ICON */
+
+.cs_rating-feedback-controls a span.icon {
+margin: .3em .4em .2em 1.5em;
+  height: 16px;
+  display: block;
+  float: left;
+  position: relative;
+  font-size: 10px;
+}
+
+.cs_rating-feedback-controls a span.icon {
+    font-family: "icoschwab";
+}
+
+
+/* FEEDBACK NUMBER */
+
+.cs_rating-feedback-controls a span.feedback-number,
+.cs_rating-feedback-controls a.disabled:hover span.feedback-number,
+.cs_rating-feedback-controls a span.feedback-text,
+.cs_rating-feedback-controls a.disabled:hover span.feedback-text {
+  white-space: nowrap;
+  padding: 0;
+  display: inline-block;
+  float: left;
+  margin-right: 1em;
+  margin-left: .25em;
+  padding-top: 2px;
+}
+
+.cs_rating-feedback-controls a.selected span.feedback-number,
+.cs_rating-feedback-controls a:hover span.feedback-number,
+.cs_rating-feedback-controls a.selected span.feedback-text,
+.cs_rating-feedback-controls a:hover span.feedback-text {}
+
+
+/* LEFT CAP */
+
+.cs_rating-feedback-controls a span.left-cap,
+.cs_rating-feedback-controls a.disabled:hover span.left-cap {}
+
+.cs_rating-feedback-controls a.selected span.left-cap,
+.cs_rating-feedback-controls a:hover span.left-cap {}
+
+.cs_rating-feedback-controls a.feedback {
+    /*  background-image: url(<xsl:value-of select="sitePath"/>/public/file/PS-CS2/control-strip.png);*/
+    background-repeat: no-repeat;
+    background-position: 0 0;
+    width: 18px;
+    height: 18px;
+    padding: 0px;
+    margin-top: 3px;
+}
+
+.cs_rating-feedback-controls a.feedback:hover,
+.cs_rating-feedback-controls a.feedback.selected {}
+
+
+/* SMALL */
+
+.cs_rating-feedback-controls a.small,
+.cs_rating-feedback-controls a.small:hover {}
+
+.cs_rating-feedback-controls a.small span.icon {}
+
+.cs_rating-feedback-controls a.small span.feedback-number,
+.cs_rating-feedback-controls a.small:hover span.feedback-number {}
+
+.cs_rating-feedback-controls.ul-list {}
+
+.lowercase {
+    text-transform: lowercase;
+}
+
+.hidden {
+    position: absolute;
+    left: -10000px;
+    top: auto;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+}
+
+
+/*  */
+
+.cs_rating-feedback-controls {
+    padding: 0;
+}
+
+.vote-button {
+    color: #181f26;
+    border: 1px solid #181F26;
+    -webkit-border-radius: 15px;
+    border-radius: 15px;
+}
+
+.icon.thumbs-up:before {
+    content: "\e600";
+    display: block
+}
+
+.icon.thumbs-down:before {
+    content: "\e60c";
+    display: block
+}

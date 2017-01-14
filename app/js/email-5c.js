@@ -1,7 +1,7 @@
 $(document).ready(function(){
-	$("#wrapper").load("form/classes.html div.main *");
+	$("#wrapper").load("files/schwab.html table.cost-benefit-table caption >");
 	
-	$("h1").html("<p>hello</p>");	
+	$("td").html("<p>hello</p>");	
 	// $("#subpage001").append("hwlo");
 	
 	// $("#wrapper").load("./sunday-school-classes/");

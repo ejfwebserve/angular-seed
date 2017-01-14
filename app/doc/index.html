@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width">
+	<title>DocStrap Index</title>
+
+	<!--[if lt IE 9]>
+	<script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+	<![endif]-->
+	<link type="text/css" rel="stylesheet" href="styles/sunlight.default.css">
+
+	<link type="text/css" rel="stylesheet" href="styles/site.cerulean.css">
+
+</head>
+
+<body>
+
+<div class="navbar navbar-default navbar-fixed-top navbar-inverse">
+<div class="container">
+	<div class="navbar-header">
+		<a class="navbar-brand" href="index.html">DocStrap</a>
+		<button class="navbar-toggle" type="button" data-toggle="collapse" data-target="#topNavigation">
+			<span class="icon-bar"></span>
+			<span class="icon-bar"></span>
+			<span class="icon-bar"></span>
+        </button>
+	</div>
+	<div class="navbar-collapse collapse" id="topNavigation">
+		<ul class="nav navbar-nav">
+			
+		</ul>
+        
+            <div class="col-sm-3 col-md-3">
+                <form class="navbar-form" role="search">
+                    <div class="input-group">
+                        <input type="text" class="form-control" placeholder="Search" name="q" id="search-input">
+                        <div class="input-group-btn">
+                            <button class="btn btn-default" id="search-submit"><i class="glyphicon glyphicon-search"></i></button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        
+	</div>
+
+</div>
+</div>
+
+
+<div class="container" id="toc-content">
+<div class="row">
+
+	
+	<div class="col-md-8">
+	
+		<div id="main">
+			
+
+	
+	
+
+
+
+
+
+
+
+
+
+
+
+	
+	
+
+
+
+
+
+    <section class="readme-section">
+        <article><h1><code>angular-seed</code> — the seed for AngularJS apps</h1><p>This project is an application skeleton for a typical <a href="https://angularjs.org/">AngularJS</a> web app. You can use it<br>to quickly bootstrap your angular webapp projects and dev environment for these projects.</p>
+<p>The seed contains a sample AngularJS application and is preconfigured to install the Angular<br>framework and a bunch of development and testing tools for instant web development gratification.</p>
+<p>The seed app doesn't do much, just shows how to wire two controllers and views together.</p>
+<h2>Getting Started</h2><p>To get you started you can simply clone the <code>angular-seed</code> repository and install the dependencies:</p>
+<h3>Prerequisites</h3><p>You need git to clone the <code>angular-seed</code> repository. You can get git from <a href="https://git-scm.com/">here</a>.</p>
+<p>We also use a number of Node.js tools to initialize and test <code>angular-seed</code>. You must have Node.js<br>and its package manager (npm) installed. You can get them from <a href="https://nodejs.org/">here</a>.</p>
+<h3>Clone <code>angular-seed</code></h3><p>Clone the <code>angular-seed</code> repository using git:</p>
+<pre class="prettyprint source"><code>git clone https://github.com/angular/angular-seed.git
+cd angular-seed</code></pre><p>If you just want to start a new project without the <code>angular-seed</code> commit history then you can do:</p>
+<pre class="prettyprint source"><code>git clone --depth=1 https://github.com/angular/angular-seed.git &lt;your-project-name></code></pre><p>The <code>depth=1</code> tells git to only pull down one commit worth of historical data.</p>
+<h3>Install Dependencies</h3><p>We have two kinds of dependencies in this project: tools and Angular framework code. The tools help<br>us manage and test the application.</p>
+<ul>
+<li>We get the tools we depend upon via <code>npm</code>, the <a href="https://www.npmjs.org/">Node package manager</a>.</li>
+<li>We get the Angular code via <code>bower</code>, a <a href="http://bower.io/">client-side code package manager</a>.</li>
+<li>In order to run the end-to-end tests, you will also need to have the<br><a href="https://wikipedia.org/wiki/Java_Development_Kit">Java Development Kit (JDK)</a> installed on your machine. Check out the section on<br><a href="#e2e-testing">end-to-end testing</a> for more info.</li>
+</ul>
+<p>We have preconfigured <code>npm</code> to automatically run <code>bower</code> so we can simply do:</p>
+<pre class="prettyprint source"><code>npm install</code></pre><p>Behind the scenes this will also call <code>bower install</code>. After that, you should find out that you have<br>two new folders in your project.</p>
+<ul>
+<li><code>node_modules</code> - contains the npm packages for the tools we need</li>
+<li><code>app/bower_components</code> - contains the Angular framework files</li>
+</ul>
+<p><em>Note that the <code>bower_components</code> folder would normally be installed in the root folder but<br><code>angular-seed</code> changes this location through the <code>.bowerrc</code> file. Putting it in the <code>app</code> folder<br>makes it easier to serve the files by a web server.</em></p>
+<h3>Run the Application</h3><p>We have preconfigured the project with a simple development web server. The simplest way to start<br>this server is:</p>
+<pre class="prettyprint source"><code>npm start</code></pre><p>Now browse to the app at <a href="http://localhost:8000/index.html"><code>localhost:8000/index.html</code></a>.</p>
+<h2>Directory Layout</h2><pre class="prettyprint source"><code>app/                    --> all of the source files for the application
+  app.css               --> default stylesheet
+  components/           --> all app specific modules
+    version/              --> version related components
+      version.js                 --> version module declaration and basic &quot;version&quot; value service
+      version_test.js            --> &quot;version&quot; value service tests
+      version-directive.js       --> custom directive that returns the current app version
+      version-directive_test.js  --> version directive tests
+      interpolate-filter.js      --> custom interpolation filter
+      interpolate-filter_test.js --> interpolate filter tests
+  view1/                --> the view1 view template and logic
+    view1.html            --> the partial template
+    view1.js              --> the controller logic
+    view1_test.js         --> tests of the controller
+  view2/                --> the view2 view template and logic
+    view2.html            --> the partial template
+    view2.js              --> the controller logic
+    view2_test.js         --> tests of the controller
+  app.js                --> main application module
+  index.html            --> app layout file (the main html template file of the app)
+  index-async.html      --> just like index.html, but loads js files asynchronously
+karma.conf.js         --> config file for running unit tests with Karma
+e2e-tests/            --> end-to-end tests
+  protractor-conf.js    --> Protractor config file
+  scenarios.js          --> end-to-end scenarios to be run by Protractor</code></pre><h2>Testing</h2><p>There are two kinds of tests in the <code>angular-seed</code> application: Unit tests and end-to-end tests.</p>
+<h3>Running Unit Tests</h3><p>The <code>angular-seed</code> app comes preconfigured with unit tests. These are written in <a href="https://jasmine.github.io/">Jasmine</a>,<br>which we run with the <a href="https://karma-runner.github.io/">Karma</a> test runner. We provide a Karma configuration file to run them.</p>
+<ul>
+<li>The configuration is found at <code>karma.conf.js</code>.</li>
+<li>The unit tests are found next to the code they are testing and have an <code>_test.js</code> suffix (e.g.<br><code>view1_test.js</code>).</li>
+</ul>
+<p>The easiest way to run the unit tests is to use the supplied npm script:</p>
+<pre class="prettyprint source"><code>npm test</code></pre><p>This script will start the Karma test runner to execute the unit tests. Moreover, Karma will start<br>watching the source and test files for changes and then re-run the tests whenever any of them<br>changes.<br>This is the recommended strategy; if your unit tests are being run every time you save a file then<br>you receive instant feedback on any changes that break the expected code functionality.</p>
+<p>You can also ask Karma to do a single run of the tests and then exit. This is useful if you want to<br>check that a particular version of the code is operating as expected. The project contains a<br>predefined script to do this:</p>
+<pre class="prettyprint source"><code>npm run test-single-run</code></pre><p><a name="e2e-testing"></a></p>
+<h3>Running End-to-End Tests</h3><p>The <code>angular-seed</code> app comes with end-to-end tests, again written in <a href="https://jasmine.github.io/">Jasmine</a>. These tests<br>are run with the <a href="http://www.protractortest.org/">Protractor</a> End-to-End test runner. It uses native events and has<br>special features for Angular applications.</p>
+<ul>
+<li>The configuration is found at <code>e2e-tests/protractor-conf.js</code>.</li>
+<li>The end-to-end tests are found in <code>e2e-tests/scenarios.js</code>.</li>
+</ul>
+<p>Protractor simulates interaction with our web app and verifies that the application responds<br>correctly. Therefore, our web server needs to be serving up the application, so that Protractor can<br>interact with it.</p>
+<p><strong>Before starting Protractor, open a separate terminal window and run:</strong></p>
+<pre class="prettyprint source"><code>npm start</code></pre><p>In addition, since Protractor is built upon WebDriver, we need to ensure that it is installed and<br>up-to-date. The <code>angular-seed</code> project is configured to do this automatically before running the<br>end-to-end tests, so you don't need to worry about it. If you want to manually update the WebDriver,<br>you can run:</p>
+<pre class="prettyprint source"><code>npm run update-webdriver</code></pre><p>Once you have ensured that the development web server hosting our application is up and running, you<br>can run the end-to-end tests using the supplied npm script:</p>
+<pre class="prettyprint source"><code>npm run protractor</code></pre><p>This script will execute the end-to-end tests against the application being hosted on the<br>development server.</p>
+<p><strong>Note:</strong><br>Under the hood, Protractor uses the <a href="http://docs.seleniumhq.org/">Selenium Standalone Server</a>, which in turn requires<br>the <a href="https://wikipedia.org/wiki/Java_Development_Kit">Java Development Kit (JDK)</a> to be installed on your local machine. Check this by running<br><code>java -version</code> from the command line.</p>
+<p>If JDK is not already installed, you can download it <a href="http://www.oracle.com/technetwork/java/javase/downloads">here</a>.</p>
+<h2>Updating Angular</h2><p>Since the Angular framework library code and tools are acquired through package managers (npm and<br>bower) you can use these tools to easily update the dependencies. Simply run the preconfigured<br>script:</p>
+<pre class="prettyprint source"><code>npm run update-deps</code></pre><p>This will call <code>npm update</code> and <code>bower update</code>, which in turn will find and install the latest<br>versions that match the version ranges specified in the <code>package.json</code> and <code>bower.json</code> files<br>respectively.</p>
+<h2>Loading Angular Asynchronously</h2><p>The <code>angular-seed</code> project supports loading the framework and application scripts asynchronously.<br>The special <code>index-async.html</code> is designed to support this style of loading. For it to work you must<br>inject a piece of Angular JavaScript into the HTML page. The project has a predefined script to help<br>do this:</p>
+<pre class="prettyprint source"><code>npm run update-index-async</code></pre><p>This will copy the contents of the <code>angular-loader.js</code> library file into the <code>index-async.html</code><br>page. You can run this every time you update the version of Angular that you are using.</p>
+<h2>Serving the Application Files</h2><p>While Angular is client-side-only technology and it is possible to create Angular web apps that<br>do not require a backend server at all, we recommend serving the project files using a local<br>web server during development to avoid issues with security restrictions (sandbox) in browsers. The<br>sandbox implementation varies between browsers, but quite often prevents things like cookies, XHR,<br>etc to function properly when an HTML page is opened via the <code>file://</code> scheme instead of <code>http://</code>.</p>
+<h3>Running the App during Development</h3><p>The <code>angular-seed</code> project comes preconfigured with a local development web server. It is a Node.js<br>tool called <a href="https://github.com/indexzero/http-server">http-server</a>. You can start this web server with <code>npm start</code>, but you may<br>choose to install the tool globally:</p>
+<pre class="prettyprint source"><code>sudo npm install -g http-server</code></pre><p>Then you can start your own development web server to serve static files from a folder by running:</p>
+<pre class="prettyprint source"><code>http-server -a localhost -p 8000</code></pre><p>Alternatively, you can choose to configure your own web server, such as Apache or Nginx. Just<br>configure your server to serve the files under the <code>app/</code> directory.</p>
+<h3>Running the App in Production</h3><p>This really depends on how complex your app is and the overall infrastructure of your system, but<br>the general rule is that all you need in production are the files under the <code>app/</code> directory.<br>Everything else should be omitted.</p>
+<p>Angular apps are really just a bunch of static HTML, CSS and JavaScript files that need to be hosted<br>somewhere they can be accessed by browsers.</p>
+<p>If your Angular app is talking to the backend server via XHR or other means, you need to figure out<br>what is the best way to host the static files to comply with the same origin policy if applicable.<br>Usually this is done by hosting the files by the backend server or through reverse-proxying the<br>backend server(s) and web server(s).</p>
+<h2>Continuous Integration</h2><h3>Travis CI</h3><p><a href="https://travis-ci.org/">Travis CI</a> is a continuous integration service, which can monitor GitHub for new commits to<br>your repository and execute scripts such as building the app or running tests. The <code>angular-seed</code><br>project contains a Travis configuration file, <code>.travis.yml</code>, which will cause Travis to run your<br>tests when you push to GitHub.</p>
+<p>You will need to enable the integration between Travis and GitHub. See the<br><a href="https://docs.travis-ci.com/user/getting-started">Travis website</a> for instructions on how to do this.</p>
+<h2>Contact</h2><p>For more information on AngularJS please check out <a href="https://angularjs.org/">angularjs.org</a>.</p></article>
+    </section>
+
+
+
+
+
+
+
+	<h1 class="page-title">Index</h1>
+<section>
+
+<header>
+    
+        <h2>
+        build.js
+        </h2>
+        
+    
+</header>
+
+
+<article>
+    <div class="container-overview">
+    
+        
+            <div class="description"><p>Hiding unused fields in the ministries contact form.</p></div>
+        
+
+        
+<dl class="details">
+    
+
+	
+
+	
+
+	
+
+    
+
+    
+
+    
+
+    
+
+	
+
+	
+
+	
+
+	
+
+	
+
+
+
+	
+	<dt class="tag-source method-doc-label method-doc-details-label">Source:</dt>
+	<dd class="tag-source">
+		<ul class="dummy">
+			<li>
+				<a href="build.js.html">build.js</a>,
+				 <a href="build.js.html#sunlight-1-line-2">line 2</a>
+			</li>
+		</ul>
+	</dd>
+	
+
+	
+
+	
+
+	
+</dl>
+
+
+        
+            <h3>Example</h3>
+            
+    <pre class="sunlight-highlight-javascript">$(&quot;#street_address_block&quot;).hide();
+	</pre>
+
+
+        
+    
+    </div>
+
+    
+
+    
+        <h3 class="subsection-title">Requires</h3>
+
+        <ul>
+            <li>module:jQuery</li>
+        </ul>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+	<h1 class="page-title">Index</h1>
+<section>
+
+<header>
+    
+        <h2>
+        lookup2.js
+        </h2>
+        
+    
+</header>
+
+
+<article>
+    <div class="container-overview">
+    
+        
+            <div class="description"><p>Hiding unused fields in the ministries contact form.</p></div>
+        
+
+        
+<dl class="details">
+    
+
+	
+
+	
+
+	
+
+    
+
+    
+
+    
+
+    
+
+	
+
+	
+
+	
+
+	
+
+	
+
+
+
+	
+	<dt class="tag-source method-doc-label method-doc-details-label">Source:</dt>
+	<dd class="tag-source">
+		<ul class="dummy">
+			<li>
+				<a href="lookup2.js.html">lookup2.js</a>,
+				 <a href="lookup2.js.html#sunlight-1-line-2">line 2</a>
+			</li>
+		</ul>
+	</dd>
+	
+
+	
+
+	
+
+	
+</dl>
+
+
+        
+            <h3>Example</h3>
+            
+    <pre class="sunlight-highlight-javascript">$(&quot;#street_address_block&quot;).hide();
+	</pre>
+
+
+        
+    
+    </div>
+
+    
+
+    
+        <h3 class="subsection-title">Requires</h3>
+
+        <ul>
+            <li>module:jQuery</li>
+        </ul>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+		</div>
+	</div>
+
+	<div class="clearfix"></div>
+
+	
+		<div class="col-md-3">
+			<div id="toc" class="col-md-3 hidden-xs hidden-sm hidden-md"></div>
+		</div>
+	
+
+</div>
+</div>
+
+
+    <div class="modal fade" id="searchResults">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <h4 class="modal-title">Search results</h4>
+          </div>
+          <div class="modal-body"></div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+          </div>
+        </div><!-- /.modal-content -->
+      </div><!-- /.modal-dialog -->
+    </div>
+
+
+<footer>
+
+
+	<span class="copyright">
+	DocStrap Copyright © 2012-2015 The contributors to the JSDoc3 and DocStrap projects.
+	</span>
+
+<span class="jsdoc-message">
+	Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.3</a>
+	
+		on Sat Jan 14th 2017
+	
+	using the <a href="https://github.com/docstrap/docstrap">DocStrap template</a>.
+</span>
+</footer>
+
+<script src="scripts/docstrap.lib.js"></script>
+<script src="scripts/toc.js"></script>
+
+    <script type="text/javascript" src="scripts/fulltext-search-ui.js"></script>
+
+
+<script>
+$( function () {
+	$( "[id*='$']" ).each( function () {
+		var $this = $( this );
+
+		$this.attr( "id", $this.attr( "id" ).replace( "$", "__" ) );
+	} );
+
+	$( ".tutorial-section pre, .readme-section pre, pre.prettyprint.source" ).each( function () {
+		var $this = $( this );
+
+		var example = $this.find( "code" );
+		exampleText = example.html();
+		var lang = /{@lang (.*?)}/.exec( exampleText );
+		if ( lang && lang[1] ) {
+			exampleText = exampleText.replace( lang[0], "" );
+			example.html( exampleText );
+			lang = lang[1];
+		} else {
+			var langClassMatch = example.parent()[0].className.match(/lang\-(\S+)/);
+			lang = langClassMatch ? langClassMatch[1] : "javascript";
+		}
+
+		if ( lang ) {
+
+			$this
+			.addClass( "sunlight-highlight-" + lang )
+			.addClass( "linenums" )
+			.html( example.html() );
+
+		}
+	} );
+
+	Sunlight.highlightAll( {
+		lineNumbers : true,
+		showMenu : true,
+		enableDoclinks : true
+	} );
+
+	$.catchAnchorLinks( {
+        navbarOffset: 10
+	} );
+	$( "#toc" ).toc( {
+		anchorName  : function ( i, heading, prefix ) {
+			return $( heading ).attr( "id" ) || ( prefix + i );
+		},
+		selectors   : "#toc-content h1,#toc-content h2,#toc-content h3,#toc-content h4",
+		showAndHide : false,
+		smoothScrolling: true
+	} );
+
+	$( "#main span[id^='toc']" ).addClass( "toc-shim" );
+	$( '.dropdown-toggle' ).dropdown();
+
+    $( "table" ).each( function () {
+      var $this = $( this );
+      $this.addClass('table');
+    } );
+
+} );
+</script>
+
+
+
+<!--Navigation and Symbol Display-->
+
+
+<!--Google Analytics-->
+
+
+
+    <script type="text/javascript">
+        $(document).ready(function() {
+            SearcherDisplay.init();
+        });
+    </script>
+
+
+</body>
+</html>

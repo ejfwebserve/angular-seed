@@ -1,0 +1,776 @@
+/* Configurable variables. */
+var hexcase = 0;  /* hex output format. 0 - lowercase; 1 - uppercase        */
+var b64pad = "="; /* base-64 pad character. "=" for strict RFC compliance   */
+var chrsz = 8;  /* bits per input character. 8 - ASCII; 16 - Unicode      */
+var sendBid = "";
+
+/* Method for SHA 256 encryption. */
+function SHA256(s) {
+
+    var chrsz = 8;
+    var hexcase = 0;
+
+    function safe_add(x, y) {
+        var lsw = (x & 0xFFFF) + (y & 0xFFFF);
+        var msw = (x >> 16) + (y >> 16) + (lsw >> 16);
+        return (msw << 16) | (lsw & 0xFFFF);
+    }
+
+    function S(X, n) { return (X >>> n) | (X << (32 - n)); }
+    function R(X, n) { return (X >>> n); }
+    function Ch(x, y, z) { return ((x & y) ^ ((~x) & z)); }
+    function Maj(x, y, z) { return ((x & y) ^ (x & z) ^ (y & z)); }
+    function Sigma0256(x) { return (S(x, 2) ^ S(x, 13) ^ S(x, 22)); }
+    function Sigma1256(x) { return (S(x, 6) ^ S(x, 11) ^ S(x, 25)); }
+    function Gamma0256(x) { return (S(x, 7) ^ S(x, 18) ^ R(x, 3)); }
+    function Gamma1256(x) { return (S(x, 17) ^ S(x, 19) ^ R(x, 10)); }
+
+    function core_sha256(m, l) {
+        var K = new Array(0x428A2F98, 0x71374491, 0xB5C0FBCF, 0xE9B5DBA5, 0x3956C25B, 0x59F111F1, 0x923F82A4, 0xAB1C5ED5, 0xD807AA98, 0x12835B01, 0x243185BE, 0x550C7DC3, 0x72BE5D74, 0x80DEB1FE, 0x9BDC06A7, 0xC19BF174, 0xE49B69C1, 0xEFBE4786, 0xFC19DC6, 0x240CA1CC, 0x2DE92C6F, 0x4A7484AA, 0x5CB0A9DC, 0x76F988DA, 0x983E5152, 0xA831C66D, 0xB00327C8, 0xBF597FC7, 0xC6E00BF3, 0xD5A79147, 0x6CA6351, 0x14292967, 0x27B70A85, 0x2E1B2138, 0x4D2C6DFC, 0x53380D13, 0x650A7354, 0x766A0ABB, 0x81C2C92E, 0x92722C85, 0xA2BFE8A1, 0xA81A664B, 0xC24B8B70, 0xC76C51A3, 0xD192E819, 0xD6990624, 0xF40E3585, 0x106AA070, 0x19A4C116, 0x1E376C08, 0x2748774C, 0x34B0BCB5, 0x391C0CB3, 0x4ED8AA4A, 0x5B9CCA4F, 0x682E6FF3, 0x748F82EE, 0x78A5636F, 0x84C87814, 0x8CC70208, 0x90BEFFFA, 0xA4506CEB, 0xBEF9A3F7, 0xC67178F2);
+        var HASH = new Array(0x6A09E667, 0xBB67AE85, 0x3C6EF372, 0xA54FF53A, 0x510E527F, 0x9B05688C, 0x1F83D9AB, 0x5BE0CD19);
+        var W = new Array(64);
+        var a, b, c, d, e, f, g, h, i, j;
+        var T1, T2;
+
+        m[l >> 5] |= 0x80 << (24 - l % 32);
+        m[((l + 64 >> 9) << 4) + 15] = l;
+
+        for (var i = 0; i < m.length; i += 16) {
+            a = HASH[0];
+            b = HASH[1];
+            c = HASH[2];
+            d = HASH[3];
+            e = HASH[4];
+            f = HASH[5];
+            g = HASH[6];
+            h = HASH[7];
+
+            for (var j = 0; j < 64; j++) {
+                if (j < 16) W[j] = m[j + i];
+                else W[j] = safe_add(safe_add(safe_add(Gamma1256(W[j - 2]), W[j - 7]), Gamma0256(W[j - 15])), W[j - 16]);
+
+                T1 = safe_add(safe_add(safe_add(safe_add(h, Sigma1256(e)), Ch(e, f, g)), K[j]), W[j]);
+                T2 = safe_add(Sigma0256(a), Maj(a, b, c));
+
+                h = g;
+                g = f;
+                f = e;
+                e = safe_add(d, T1);
+                d = c;
+                c = b;
+                b = a;
+                a = safe_add(T1, T2);
+            }
+
+            HASH[0] = safe_add(a, HASH[0]);
+            HASH[1] = safe_add(b, HASH[1]);
+            HASH[2] = safe_add(c, HASH[2]);
+            HASH[3] = safe_add(d, HASH[3]);
+            HASH[4] = safe_add(e, HASH[4]);
+            HASH[5] = safe_add(f, HASH[5]);
+            HASH[6] = safe_add(g, HASH[6]);
+            HASH[7] = safe_add(h, HASH[7]);
+        }
+        return HASH;
+    }
+
+    function str2binb(str) {
+        var bin = Array();
+        var mask = (1 << chrsz) - 1;
+        for (var i = 0; i < str.length * chrsz; i += chrsz) {
+            bin[i >> 5] |= (str.charCodeAt(i / chrsz) & mask) << (24 - i % 32);
+        }
+        return bin;
+    }
+
+
+    /*
+    * Convert an binary array to a string
+    */
+    function binb2str(input) {
+        var output = "";
+        for (var i = 0; i < input.length * 32; i += 8)
+            output += String.fromCharCode((input[i >> 5] >>> (24 - i % 32)) & 0xFF);
+        return output;
+    }
+
+    /*
+    * Convert a raw string to a base-64 string
+    */
+    function str2b64(input) {
+        try { b64pad } catch (e) { b64pad = ''; }
+        var tab = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+        var output = "";
+        var len = input.length;
+        for (var i = 0; i < len; i += 3) {
+            var triplet = (input.charCodeAt(i) << 16)
+                | (i + 1 < len ? input.charCodeAt(i + 1) << 8 : 0)
+                | (i + 2 < len ? input.charCodeAt(i + 2) : 0);
+            for (var j = 0; j < 4; j++) {
+                if (i * 8 + j * 6 > input.length * 8) output += b64pad;
+                else output += tab.charAt((triplet >>> 6 * (3 - j)) & 0x3F);
+            }
+        }
+        return output;
+    }
+
+    return str2b64(binb2str(core_sha256(str2binb(s), s.length * chrsz)));
+
+}
+
+
+function getCookie(c_name) {
+    var i, x, y, cookies = document.cookie.split(";");
+    for (i = 0; i < cookies.length; i++) {
+        x = cookies[i].substr(0, cookies[i].indexOf("="));
+        y = cookies[i].substr(cookies[i].indexOf("=") + 1);
+        x = x.replace(/^\s+|\s+$/g, "");
+        if (x == c_name) {
+            return unescape(y);
+        }
+    }
+}
+
+
+function fetchBrowserId(cbidInd) {
+    var cbid;
+    var np2 = getCookie("NP2");
+    if (np2 != null && np2.indexOf("|") != -1) {
+        var val = np2.split("|");
+        if (val.length > 2) {
+            cbid = cbidInd + SHA256(cbidInd + val[1]); //Browser ID
+            sendBid = val[1];
+        }
+    } else {
+        var browserId = base64ToAscii(bin2String(str2ab(createGuid()))).replace(/(^=+|=+$)/mg, "");
+        var np2Cookie = "|" + browserId + "|||||||||||||";
+        mkTmsCookie("NP2", np2Cookie, 6000, "/", ".schwab.com");
+        cbid = cbidInd + SHA256(cbidInd + browserId);
+        sendBid = browserId;
+    }
+    return cbid;
+}
+
+function base64ToAscii(text) {
+    var digits = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/",
+        i = 0,
+        cur, prev, byteNum,
+        result = [];
+
+    while (i < text.length) {
+
+        cur = text.charCodeAt(i);
+        byteNum = i % 3;
+
+        switch (byteNum) {
+            case 0: //first byte
+                result.push(digits.charAt(cur >> 2));
+                break;
+
+            case 1: //second byte
+                result.push(digits.charAt((prev & 3) << 4 | (cur >> 4)));
+                break;
+
+            case 2: //third byte
+                result.push(digits.charAt((prev & 0x0f) << 2 | (cur >> 6)));
+                result.push(digits.charAt(cur & 0x3f));
+                break;
+        }
+
+        prev = cur;
+        i++;
+    }
+    return result.join("");
+}
+
+// NP2 Cookie Initialization for Akamai Pages
+function mkTmsCookie(name, value, expires, path, domain) {
+    var cookie = name + "=" + value + ";";
+
+    if (expires) {
+        // If it's a date
+        if (expires instanceof Date) {
+            // If it isn't a valid date
+            if (isNaN(expires.getTime()))
+                expires = new Date();
+        }
+        else
+            expires = new Date(new Date().getTime() + parseInt(expires) * 1000 * 60 * 60 * 24);
+
+        cookie += "expires=" + expires.toGMTString() + ";";
+    }
+
+    if (path)
+        cookie += "path=" + path + ";";
+    if (domain)
+        cookie += "domain=" + domain + ";";
+
+    document.cookie = cookie;
+}
+
+function str2ab(str) {
+    var res = str.split('-');
+    var bufView = new Array(16);
+    var k = 0;
+    // Convert every two chars of each portion
+    // of res from hex to int.
+    for (var i = 0; i < res.length; i++) {
+        for (var j = 0; j < res[i].length; j += 2) {
+            var hex = res[i][j] + res[i][j + 1];
+            bufView[k++] = parseInt(hex, 16);
+        }
+    }
+    return bufView;
+}
+
+function bin2String(array) {
+    var result = "";
+    for (var i = 0; i < array.length; i++) {
+        result += String.fromCharCode(parseInt(array[i]));
+    }
+    return result;
+}
+
+function createGuid() {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+        var r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+    });
+}
+
+/*---------------site-specific configuration------------------*/
+/* Prospect Site Header Tag Slate Script for Hitbox This is used to implement public site-specific rules and business logic.*/
+var scatAccounts = { "DEV": "cschwabschwabuat", "ACPT": "cschwabschwabuat", "PROD": "cschwabschwabprod" };
+TagParameters = {
+    Vendor:
+    {
+        SiteCatalyst: {
+            Accounts: typeof (waEnvId) == "undefined" ? "" : (typeof (scatAccounts) == "undefined" ? "charlesschwabdev" : scatAccounts[waEnvId]),
+            DomainName: "metric.schwab.com",
+            SecureDomainName: "smetric.schwab.com"
+        },
+
+        DoubleClick: {	
+            DomainName: "fls.doubleclick.net",
+            SecureDomainName: "fls.doubleclick.net"
+        }
+    },
+    Page: {
+        Name: typeof (waPageName) == "undefined" ? "PUT+PAGE+NAME+HERE" : waPageName, //PAGE NAME(S) - old js var=webHbxPageName
+        Path: typeof (waUri) == "undefined" ? location.pathname : waUri, //FOLDER PATH - old js var=webHbxUri
+        Category: typeof (waCategoryName) == "undefined" ? "prospects" : waCategoryName, //CONTENT CATEGORY
+        MultiLevelCategory: typeof (waMultiLevelCategory) == "undefined" ? "" : waMultiLevelCategory, //Multi Level Category
+        UseDefaultPageName: false //Default page name indicator		
+    },
+    Optional: {
+        CampaignId: typeof (waCampaign) == "undefined" ? "" : waCampaign, //CAMPAIGN ID - old js var=webHbxCampaign
+        EntryTracking: typeof (waEntryTracking) == "undefined" ? false : waEntryTracking, //ENTRY TRACKING FLAG - old js var=webHbxPageLoadDisabled
+        Segment: typeof (waSegment) == "undefined" ? "" : waSegment, //POPULATION GROUP,
+        UserId: typeof (waUserId) == "undefined" ? "" : waUserId, //USERID or CUSTOMER ID
+        Disabled: typeof (waDisabled) == "undefined" ? false : waDisabled, // PAGE LOAD Indicator- old js var=webHbxDisabled	    	    
+        ApplicationName: typeof (waAppName) == "undefined" ? "" : waAppName,                // ApplicationName or Type
+        SuccessEventId: typeof (waSuccessEventId) == "undefined" ? "" : waSuccessEventId,   // Success Event Id
+        ApplicationId: typeof (waApplicationId) == "undefined" ? "" : waApplicationId,      // Application Id (Transaction Id)
+        AccountType: typeof (waAccountType) == "undefined" ? "" : waAccountType,            // Account Type   
+        LeadType: typeof (waLeadType) == "undefined" ? "" : waLeadType,                     // Lead Type
+        Ceid: typeof (waCeid) == "undefined" ? "" : waCeid,                                 // Transaction Id    
+        Cbid: fetchBrowserId("A"),                                                                           // Browser iD- Derived parameter
+        ApplicationDetail1: typeof (waApplicationDetail1) == "undefined" ? "" : waApplicationDetail1,         // ApplicationDetail1
+        ToolName: typeof (waToolName) == "undefined" ? "" : waToolName,                                       // ToolName
+        ToolSuccessAction: typeof (waToolSuccessAction) == "undefined" ? "" : waToolSuccessAction,            // ToolSuccessAction 
+        ToolErrorDescription: typeof (waToolErrorDescription) == "undefined" ? "" : waToolErrorDescription,    // ToolErrorDescription 
+        OmniLanguage: typeof (waLanguage) == "undefined" ? "en-US" : waLanguage,                                    // Browser language
+        MoxieChatType:  typeof (waChatType) == "undefined" ? "" : waChatType,                              // Moxie Chat Type
+        MoxieServiceLineId: typeof (waServiceLineId) == "undefined" ? "" : waServiceLineId,                 // Moxie Chat Service Line ID
+        ExpertInsightsContentType: typeof (waScContentType) == "undefined" ? "" : waScContentType,           // Expert Insights Content Type
+        AptLoad: typeof (waAptLoad) == "undefined" ? "false" : waAptLoad,                                        // Test and Target - Analytics Powered Targeting Trigger
+        Platform: typeof (waPlatform) == "undefined" ? "" : waPlatform // Platform Type for Mobile or Desktop
+    },
+    CustomEventParameters: {
+        CustomEventVar5: typeof (waCustEventVar5) == "undefined" ? "" : waCustEventVar5,       //Custom Event 5
+        CustomEventVar6: typeof (waCustEventVar6) == "undefined" ? "" : waCustEventVar6,       //Custom Event 6
+        CustomEventVar7: typeof (waCustEventVar7) == "undefined" ? "" : waCustEventVar7,       //Custom Event 7
+        CustomEventVar8: typeof (waCustEventVar8) == "undefined" ? "" : waCustEventVar8,       //Custom Event 8
+        CustomEventVar9: typeof (waCustEventVar9) == "undefined" ? "" : waCustEventVar9,       //Custom Event 9
+        CustomEventVar10: typeof (waCustEventVar10) == "undefined" ? "" : waCustEventVar10,    //Custom Event 10
+        CustomEventVar13: typeof (waCustEventVar13) == "undefined" ? "" : waCustEventVar13,    //Custom Event 13
+        CustomEventVar19: typeof (waCustEventVar19) == "undefined" ? "" : waCustEventVar19,    //Custom Event Parameter 19
+        CustomEventVar24: typeof (waCustEventVar24) == "undefined" ? "" : waCustEventVar24,    //Custom Event Parameter 24        
+        CustomEventVar59: typeof (waCustEventVar59) == "undefined" ? "" : waCustEventVar59,    //Custom Event Parameter 59
+        CustomEventVar60: typeof (waCustEventVar60) == "undefined" ? "" : waCustEventVar60,    //Custom Event Parameter 60    
+        CustomEventVar61: typeof (waCustEventVar61) == "undefined" ? "" : waCustEventVar61,    //Custom Event Parameter 61    
+        CustomEventVar62: typeof (waCustEventVar62) == "undefined" ? "" : waCustEventVar62,    //Custom Event Parameter 62    
+        CustomEventVar63: typeof (waCustEventVar63) == "undefined" ? "" : waCustEventVar63,    //Custom Event Parameter 63    
+        CustomEventVar64: typeof (waCustEventVar64) == "undefined" ? "" : waCustEventVar64,    //Custom Event Parameter 64    
+        CustomEventVar65: typeof (waCustEventVar65) == "undefined" ? "" : waCustEventVar65,    //Custom Event Parameter 65    
+        CustomEventVar66: typeof (waCustEventVar66) == "undefined" ? "" : waCustEventVar66,    //Custom Event Parameter 66    
+        CustomEventVar67: typeof (waCustEventVar67) == "undefined" ? "" : waCustEventVar67,    //Custom Event Parameter 67    
+        CustomEventVar68: typeof (waCustEventVar68) == "undefined" ? "" : waCustEventVar68,    //Custom Event Parameter 68    
+        CustomEventVar69: typeof (waCustEventVar69) == "undefined" ? "" : waCustEventVar69,    //Custom Event Parameter 69    
+        CustomEventVar70: typeof (waCustEventVar70) == "undefined" ? "" : waCustEventVar70     //Custom Event Parameter 70    
+    },
+    DcParameters: {
+        DcAcctType: typeof (waDcAcctType) == "undefined" ? "" : waDcAcctType,   // u3 parameter
+        DcSrc: typeof (waDcSrc) == "undefined" ? "" : waDcSrc,
+        DcType: typeof (waDcType) == "undefined" ? "" : waDcType,
+        DcCat: typeof (waDcCat) == "undefined" ? "" : waDcCat,
+        DcJpeg: typeof (waDcJpeg) == "undefined" ? "" : waDcJpeg,
+        DcCeidG: typeof (waDcCeidG) == "undefined" ? "" : waDcCeidG,
+        DcCbid: fetchBrowserId("G"),
+        DcUseSecureDomain: true,
+        DcTagSet: typeof (waDcTagSet) == "undefined" ? "" : waDcTagSet
+    },
+    SzParameters: {
+        SzId: typeof (waSzId) == "undefined" ? "" : waSzId, // Sizmek Conversion Tag Id
+        SzRedirect: typeof (waSzRedirect) == "undefined" ? null : waSzRedirect, // Redirect URL
+        SzTarget: typeof (waSzTarget) == "undefined" ? null : waSzTarget, //Redirection Target 'self' or 'blank'
+        SzParams: typeof (waSzParams) == "undefined" ? null : waSzParams, //Additional Optional Parameters
+    },
+    DefaultValues: {
+        PageName: "",  //DEFAULT PAGE NAME
+        ContentCategory: typeof (waContentCatgDefault) == "undefined" ? "full" : waContentCatgDefault  //DEFAULT CONTENT CATEGORY
+    }
+};
+/* Prospect Site Header Tag Slate Script for Custom Hitbox Tagging.*/
+//common method to generate tag call from overlay e.g. GAO
+function waTagOverlay(pagename, multilevelcat, cat, n) {
+    if (typeof (TagParameters) != "undefined" && typeof (TagParameters.Vendor) != "undefined") {
+        if (typeof (TagParameters.Vendor.SiteCatalyst) != "undefined") scatTagOverlay(pagename, multilevelcat, cat, n);
+    }
+}
+//common method for search event custom tagging
+function waSearchEvent(pagename, keyword, results) {
+    if (typeof (TagParameters) != "undefined" && typeof (TagParameters.Vendor) != "undefined") {
+        if (typeof (TagParameters.Vendor.SiteCatalyst) != "undefined") scatSearchEvent(pagename, keyword, results);
+    }
+}
+//common method for ratings review custom tagging
+function waRatingsEvent(productname) {
+    if (typeof (TagParameters) != "undefined" && typeof (TagParameters.Vendor) != "undefined") {
+        if (typeof (TagParameters.Vendor.SiteCatalyst) != "undefined") scatSetCustom23(productname);
+        $.ajax({ type: "GET", async: false, url: "http://www.schwab.com" + "/system/asset?cmsid=CC-TAG-FOOTER&filename=hbx.js", dataType: "script" });
+    }
+}
+//common methods for video custom tagging
+function waMediaPlay(waMediaName, waMediaOffset, waMediaPlayerName, waFirstTimePlay) {
+    if (typeof (TagParameters) != "undefined" && typeof (TagParameters.Vendor) != "undefined") {
+        if (typeof (TagParameters.Vendor.SiteCatalyst) != "undefined")
+            scatMediaPlay(waMediaName, waMediaOffset, waMediaPlayerName, waFirstTimePlay);
+
+        // Also fire off a DC tag for first time Play
+        if (typeof (TagParameters.Vendor.DoubleClick) != "undefined" && waFirstTimePlay == true)
+            DcOnClickTracking("generic", "videopla");
+    }
+}
+function waMediaPause(waMediaName, waMediaOffset) {
+    if (typeof (TagParameters) != "undefined" && typeof (TagParameters.Vendor) != "undefined") {
+        if (typeof (TagParameters.Vendor.SiteCatalyst) != "undefined") scatMediaPause(waMediaName, waMediaOffset);
+    }
+}
+function waMediaStop(waMediaName, waMediaOffset) {
+    if (typeof (TagParameters) != "undefined" && typeof (TagParameters.Vendor) != "undefined") {
+        if (typeof (TagParameters.Vendor.SiteCatalyst) != "undefined") scatMediaStop(waMediaName, waMediaOffset);
+    }
+}
+function waMediaOpen(waMediaName, waMediaLength, waMediaPlayerName) {
+    if (typeof (TagParameters) != "undefined" && typeof (TagParameters.Vendor) != "undefined") {
+        if (typeof (TagParameters.Vendor.SiteCatalyst) != "undefined") scatMediaOpen(waMediaName, waMediaLength, waMediaPlayerName);
+    }
+}
+function waMediaClose(waMediaName, waMediaOffset) {
+    if (typeof (TagParameters) != "undefined" && typeof (TagParameters.Vendor) != "undefined") {
+        if (typeof (TagParameters.Vendor.SiteCatalyst) != "undefined") scatMediaClose(waMediaName, waMediaOffset);
+    }
+}
+function waMediaComplete(waMediaName) {
+    // Nothing to do for now.
+}
+function waMediaPercentComplete(waMediaName, waPercentPlayed) {
+    if (typeof (TagParameters) != "undefined" && typeof (TagParameters.Vendor) != "undefined" &&
+        typeof (TagParameters.Vendor.DoubleClick != "undefined") ) {
+        DcOnClickTracking("generic", "video75");
+    }
+}
+// Correct common formatting errors due to CMS-format URLs and Assign the Multi Level Category value for secure site site
+TagParameters.Page = (function (P) {
+    P.Path.replace(/secure\/.*?\//, "").replace(/\/index.html|\/$/, "").match(/(.*\/)(.*)/);
+    if (P.Name.indexOf("/") > -1 && P.Name.length > 1) {
+        P.Name.match(/(.*\/)(.*)/);
+        P.Path = RegExp.$1;
+        P.Name = RegExp.$2;
+    } else if (P.Name.indexOf("/") > -1 && P.Name == "/") {
+        P.Path = P.Name;
+        P.Name = RegExp.$2;
+    } else {
+        P.Path = RegExp.$1;
+        P.Name = (P.Name == "" ? RegExp.$2 : P.Name);
+    }
+    return P;
+})(TagParameters.Page);/*
+ ============== DO NOT ALTER ANYTHING BELOW THIS LINE ! ============
+
+ Adobe Visitor API for JavaScript version: 1.5.1
+ Copyright 1996-2015 Adobe, Inc. All Rights Reserved
+ More info available at http://www.omniture.com
+*/
+function Visitor(m,s){if(!m)throw"Visitor requires Adobe Marketing Cloud Org ID";var a=this;a.version="1.5.1";var l=window,j=l.Visitor;l.s_c_in||(l.s_c_il=[],l.s_c_in=0);a._c="Visitor";a._il=l.s_c_il;a._in=l.s_c_in;a._il[a._in]=a;l.s_c_in++;var n=l.document,h=j.Na;h||(h=null);var x=j.Oa;x||(x=void 0);var i=j.la;i||(i=!0);var k=j.Ma;k||(k=!1);a.T=function(a){var c=0,b,e;if(a)for(b=0;b<a.length;b++)e=a.charCodeAt(b),c=(c<<5)-c+e,c&=c;return c};a.q=function(a){var c="0123456789",b="",e="",f,g=8,i=10,
+h=10;if(1==a){c+="ABCDEF";for(a=0;16>a;a++)f=Math.floor(Math.random()*g),b+=c.substring(f,f+1),f=Math.floor(Math.random()*g),e+=c.substring(f,f+1),g=16;return b+"-"+e}for(a=0;19>a;a++)f=Math.floor(Math.random()*i),b+=c.substring(f,f+1),0==a&&9==f?i=3:(1==a||2==a)&&10!=i&&2>f?i=10:2<a&&(i=10),f=Math.floor(Math.random()*h),e+=c.substring(f,f+1),0==a&&9==f?h=3:(1==a||2==a)&&10!=h&&2>f?h=10:2<a&&(h=10);return b+e};a.oa=function(){var a;!a&&l.location&&(a=l.location.hostname);if(a)if(/^[0-9.]+$/.test(a))a=
+"";else{var c=a.split("."),b=c.length-1,e=b-1;1<b&&2>=c[b].length&&(2==c[b-1].length||0>",ac,ad,ae,af,ag,ai,al,am,an,ao,aq,ar,as,at,au,aw,ax,az,ba,bb,be,bf,bg,bh,bi,bj,bm,bo,br,bs,bt,bv,bw,by,bz,ca,cc,cd,cf,cg,ch,ci,cl,cm,cn,co,cr,cu,cv,cw,cx,cz,de,dj,dk,dm,do,dz,ec,ee,eg,es,et,eu,fi,fm,fo,fr,ga,gb,gd,ge,gf,gg,gh,gi,gl,gm,gn,gp,gq,gr,gs,gt,gw,gy,hk,hm,hn,hr,ht,hu,id,ie,im,in,io,iq,ir,is,it,je,jo,jp,kg,ki,km,kn,kp,kr,ky,kz,la,lb,lc,li,lk,lr,ls,lt,lu,lv,ly,ma,mc,md,me,mg,mh,mk,ml,mn,mo,mp,mq,mr,ms,mt,mu,mv,mw,mx,my,na,nc,ne,nf,ng,nl,no,nr,nu,nz,om,pa,pe,pf,ph,pk,pl,pm,pn,pr,ps,pt,pw,py,qa,re,ro,rs,ru,rw,sa,sb,sc,sd,se,sg,sh,si,sj,sk,sl,sm,sn,so,sr,st,su,sv,sx,sy,sz,tc,td,tf,tg,th,tj,tk,tl,tm,tn,to,tp,tr,tt,tv,tw,tz,ua,ug,uk,us,uy,uz,va,vc,ve,vg,vi,vn,vu,wf,ws,yt,".indexOf(","+
+c[b]+","))&&e--;if(0<e)for(a="";b>=e;)a=c[b]+(a?".":"")+a,b--}return a};a.cookieRead=function(a){var a=encodeURIComponent(a),c=(";"+n.cookie).split(" ").join(";"),b=c.indexOf(";"+a+"="),e=0>b?b:c.indexOf(";",b+1);return 0>b?"":decodeURIComponent(c.substring(b+2+a.length,0>e?c.length:e))};a.cookieWrite=function(d,c,b){var e=a.cookieLifetime,f,c=""+c,e=e?(""+e).toUpperCase():"";b&&"SESSION"!=e&&"NONE"!=e?(f=""!=c?parseInt(e?e:0,10):-60)?(b=new Date,b.setTime(b.getTime()+1E3*f)):1==b&&(b=new Date,f=
+b.getYear(),b.setYear(f+2+(1900>f?1900:0))):b=0;return d&&"NONE"!=e?(n.cookie=encodeURIComponent(d)+"="+encodeURIComponent(c)+"; path=/;"+(b?" expires="+b.toGMTString()+";":"")+(a.cookieDomain?" domain="+a.cookieDomain+";":""),a.cookieRead(d)==c):0};a.g=h;a.P=function(a,c){try{"function"==typeof a?a.apply(l,c):a[1].apply(a[0],c)}catch(b){}};a.sa=function(d,c){c&&(a.g==h&&(a.g={}),a.g[d]==x&&(a.g[d]=[]),a.g[d].push(c))};a.o=function(d,c){if(a.g!=h){var b=a.g[d];if(b)for(;0<b.length;)a.P(b.shift(),
+c)}};a.j=h;a.qa=function(d,c,b){var e=0,f=0,g;if(c&&n){for(g=0;!e&&2>g;){try{e=(e=n.getElementsByTagName(0<g?"HEAD":"head"))&&0<e.length?e[0]:0}catch(i){e=0}g++}if(!e)try{n.body&&(e=n.body)}catch(j){e=0}if(e)for(g=0;!f&&2>g;){try{f=n.createElement(0<g?"SCRIPT":"script")}catch(k){f=0}g++}}!c||!e||!f?b&&b():(f.type="text/javascript",f.setAttribute("async","async"),f.src=c,e.firstChild?e.insertBefore(f,e.firstChild):e.appendChild(f),b&&(a.j==h&&(a.j={}),a.j[d]=setTimeout(b,a.loadTimeout)))};a.ma=function(d){a.j!=
+h&&a.j[d]&&(clearTimeout(a.j[d]),a.j[d]=0)};a.U=k;a.V=k;a.isAllowed=function(){if(!a.U&&(a.U=i,a.cookieRead(a.cookieName)||a.cookieWrite(a.cookieName,"T",1)))a.V=i;return a.V};a.a=h;a.e=h;var z=j.ab;z||(z="MC");var q=j.fb;q||(q="MCMID");var A=j.bb;A||(A="MCCIDH");var B=j.eb;B||(B="MCSYNCS");var D=j.cb;D||(D="MCIDTS");var y=j.Za;y||(y="A");var o=j.Wa;o||(o="MCAID");var w=j.$a;w||(w="AAM");var v=j.Ya;v||(v="MCAAMLH");var p=j.Xa;p||(p="MCAAMB");var r=j.gb;r||(r="NONE");a.B=0;a.S=function(){if(!a.B){var d=
+a.version;a.audienceManagerServer&&(d+="|"+a.audienceManagerServer);a.audienceManagerServerSecure&&(d+="|"+a.audienceManagerServerSecure);a.B=a.T(d)}return a.B};a.W=k;a.f=function(){if(!a.W){a.W=i;var d=a.S(),c=k,b=a.cookieRead(a.cookieName),e,f,g,j=new Date;a.a==h&&(a.a={});if(b&&"T"!=b){b=b.split("|");b[0].match(/^[\-0-9]+$/)&&(parseInt(b[0],10)!=d&&(c=i),b.shift());1==b.length%2&&b.pop();for(d=0;d<b.length;d+=2)e=b[d].split("-"),f=e[0],g=b[d+1],e=1<e.length?parseInt(e[1],10):0,c&&(f==A&&(g=""),
+0<e&&(e=j.getTime()/1E3-60)),f&&g&&(a.c(f,g,1),0<e&&(a.a["expire"+f]=e,j.getTime()>=1E3*e&&(a.e||(a.e={}),a.e[f]=i)))}if(!a.b(o)&&(b=a.cookieRead("s_vi")))b=b.split("|"),1<b.length&&0<=b[0].indexOf("v1")&&(g=b[1],d=g.indexOf("["),0<=d&&(g=g.substring(0,d)),g&&g.match(/^[0-9a-fA-F\-]+$/)&&a.c(o,g))}};a.ua=function(){var d=a.S(),c,b;for(c in a.a)!Object.prototype[c]&&a.a[c]&&"expire"!=c.substring(0,6)&&(b=a.a[c],d+=(d?"|":"")+c+(a.a["expire"+c]?"-"+a.a["expire"+c]:"")+"|"+b);a.cookieWrite(a.cookieName,
+d,1)};a.b=function(d,c){return a.a!=h&&(c||!a.e||!a.e[d])?a.a[d]:h};a.c=function(d,c,b){a.a==h&&(a.a={});a.a[d]=c;b||a.ua()};a.pa=function(d,c){var b=a.b(d,c);return b?b.split("*"):h};a.ta=function(d,c,b){a.c(d,c?c.join("*"):"",b)};a.Ta=function(d,c){var b=a.pa(d,c);if(b){var e={},f;for(f=0;f<b.length;f+=2)e[b[f]]=b[f+1];return e}return h};a.Va=function(d,c,b){var e=h,f;if(c)for(f in e=[],c)Object.prototype[f]||(e.push(f),e.push(c[f]));a.ta(d,e,b)};a.l=function(d,c){var b=new Date;b.setTime(b.getTime()+
+1E3*c);a.a==h&&(a.a={});a.a["expire"+d]=Math.floor(b.getTime()/1E3);0>c?(a.e||(a.e={}),a.e[d]=i):a.e&&(a.e[d]=k)};a.R=function(a){if(a&&("object"==typeof a&&(a=a.d_mid?a.d_mid:a.visitorID?a.visitorID:a.id?a.id:a.uuid?a.uuid:""+a),a&&(a=a.toUpperCase(),"NOTARGET"==a&&(a=r)),!a||a!=r&&!a.match(/^[0-9a-fA-F\-]+$/)))a="";return a};a.i=function(d,c){a.ma(d);a.h!=h&&(a.h[d]=k);if(d==z){var b=a.b(q);if(!b){b="object"==typeof c&&c.mid?c.mid:a.R(c);if(!b){if(a.u){a.getAnalyticsVisitorID(h,k,i);return}b=a.q()}a.c(q,
+b)}if(!b||b==r)b="";"object"==typeof c&&((c.d_region||c.dcs_region||c.d_blob||c.blob)&&a.i(w,c),a.u&&c.mid&&a.i(y,{id:c.id}));a.o(q,[b])}if(d==w&&"object"==typeof c){b=604800;c.id_sync_ttl!=x&&c.id_sync_ttl&&(b=parseInt(c.id_sync_ttl,10));var e=a.b(v);e||((e=c.d_region)||(e=c.dcs_region),e&&(a.l(v,b),a.c(v,e)));e||(e="");a.o(v,[e]);e=a.b(p);if(c.d_blob||c.blob)(e=c.d_blob)||(e=c.blob),a.l(p,b),a.c(p,e);e||(e="");a.o(p,[e]);!c.error_msg&&a.s&&a.c(A,a.s);a.idSyncDisableSyncs?t.ca=i:(t.ca=k,t.Ka({H:c.ibs,
+d:c.subdomain}))}if(d==y){b=a.b(o);b||((b=a.R(c))?a.l(p,-1):b=r,a.c(o,b));if(!b||b==r)b="";a.o(o,[b])}};a.h=h;a.r=function(d,c,b,e){var f="",g;if(a.isAllowed()&&(a.f(),f=a.b(d),!f&&(d==q?g=z:d==v||d==p?g=w:d==o&&(g=y),g))){if(c&&(a.h==h||!a.h[g]))a.h==h&&(a.h={}),a.h[g]=i,a.qa(g,c,function(){if(!a.b(d)){var b="";d==q?b=a.q():g==w&&(b={error_msg:"timeout"});a.i(g,b)}});a.sa(d,b);c||a.i(g,{id:r});return""}if((d==q||d==o)&&f==r)f="",e=i;b&&e&&a.P(b,[f]);return f};a._setMarketingCloudFields=function(d){a.f();
+a.i(z,d)};a.setMarketingCloudVisitorID=function(d){a._setMarketingCloudFields(d)};a.u=k;a.getMarketingCloudVisitorID=function(d,c){if(a.isAllowed()){a.marketingCloudServer&&0>a.marketingCloudServer.indexOf(".demdex.net")&&(a.u=i);var b=a.A("_setMarketingCloudFields");return a.r(q,b,d,c)}return""};a.ra=function(){a.getAudienceManagerBlob()};j.AuthState={UNKNOWN:0,AUTHENTICATED:1,LOGGED_OUT:2};a.p={};a.Q=k;a.s="";a.setCustomerIDs=function(d){if(a.isAllowed()&&d){a.f();var c,b;for(c in d)if(!Object.prototype[c]&&
+(b=d[c]))if("object"==typeof b){var e={};b.id&&(e.id=b.id);b.authState!=x&&(e.authState=b.authState);a.p[c]=e}else a.p[c]={id:b};var d=a.getCustomerIDs(),e=a.b(A),f="";e||(e=0);for(c in d)Object.prototype[c]||(b=d[c],f+=(f?"|":"")+c+"|"+(b.id?b.id:"")+(b.authState?b.authState:""));a.s=a.T(f);a.s!=e&&(a.Q=i,a.ra())}};a.getCustomerIDs=function(){a.f();var d={},c,b;for(c in a.p)Object.prototype[c]||(b=a.p[c],d[c]||(d[c]={}),b.id&&(d[c].id=b.id),d[c].authState=b.authState!=x?b.authState:j.AuthState.UNKNOWN);
+return d};a._setAnalyticsFields=function(d){a.f();a.i(y,d)};a.setAnalyticsVisitorID=function(d){a._setAnalyticsFields(d)};a.getAnalyticsVisitorID=function(d,c,b){if(a.isAllowed()){var e="";b||(e=a.getMarketingCloudVisitorID(function(){a.getAnalyticsVisitorID(d,i)}));if(e||b){var f=b?a.marketingCloudServer:a.trackingServer,g="";a.loadSSL&&(b?a.marketingCloudServerSecure&&(f=a.marketingCloudServerSecure):a.trackingServerSecure&&(f=a.trackingServerSecure));f&&(g="http"+(a.loadSSL?"s":"")+"://"+f+"/id?callback=s_c_il%5B"+
+a._in+"%5D._set"+(b?"MarketingCloud":"Analytics")+"Fields&mcorgid="+encodeURIComponent(a.marketingCloudOrgID)+(e?"&mid="+e:""));return a.r(b?q:o,g,d,c)}}return""};a._setAudienceManagerFields=function(d){a.f();a.i(w,d)};a.A=function(d){var c=a.audienceManagerServer,b="",e=a.b(q),f=a.b(p,i),g=a.b(o),g=g&&g!=r?"&d_cid_ic=AVID%01"+encodeURIComponent(g):"";a.loadSSL&&a.audienceManagerServerSecure&&(c=a.audienceManagerServerSecure);if(c){var b=a.getCustomerIDs(),h,j;if(b)for(h in b)Object.prototype[h]||
+(j=b[h],g+="&d_cid_ic="+encodeURIComponent(h)+"%01"+encodeURIComponent(j.id?j.id:"")+(j.authState?"%01"+j.authState:""));d||(d="_setAudienceManagerFields");b="http"+(a.loadSSL?"s":"")+"://"+c+"/id?d_rtbd=json&d_ver=2"+(!e&&a.u?"&d_verify=1":"")+"&d_orgid="+encodeURIComponent(a.marketingCloudOrgID)+"&d_nsid="+(a.idSyncContainerID||0)+(e?"&d_mid="+e:"")+(f?"&d_blob="+encodeURIComponent(f):"")+g+"&d_cb=s_c_il%5B"+a._in+"%5D."+d}return b};a.getAudienceManagerLocationHint=function(d,c){if(a.isAllowed()&&
+a.getMarketingCloudVisitorID(function(){a.getAudienceManagerLocationHint(d,i)})){var b=a.b(o);b||(b=a.getAnalyticsVisitorID(function(){a.getAudienceManagerLocationHint(d,i)}));if(b)return b=a.A(),a.r(v,b,d,c)}return""};a.getAudienceManagerBlob=function(d,c){if(a.isAllowed()&&a.getMarketingCloudVisitorID(function(){a.getAudienceManagerBlob(d,i)})){var b=a.b(o);b||(b=a.getAnalyticsVisitorID(function(){a.getAudienceManagerBlob(d,i)}));if(b)return b=a.A(),a.Q&&a.l(p,-1),a.r(p,b,d,c)}return""};a.m="";
+a.t={};a.C="";a.D={};a.getSupplementalDataID=function(d,c){!a.m&&!c&&(a.m=a.q(1));var b=a.m;a.C&&!a.D[d]?(b=a.C,a.D[d]=i):b&&(a.t[d]&&(a.C=a.m,a.D=a.t,a.m=b=!c?a.q(1):"",a.t={}),b&&(a.t[d]=i));return b};var u={k:!!l.postMessage,ja:1,O:864E5};a.Pa=u;a.Y={postMessage:function(a,c,b){var e=1;c&&(u.k?b.postMessage(a,c.replace(/([^:]+:\/\/[^\/]+).*/,"$1")):c&&(b.location=c.replace(/#.*$/,"")+"#"+ +new Date+e++ +"&"+a))},K:function(a,c){var b;try{if(u.k)if(a&&(b=function(b){if("string"===typeof c&&b.origin!==
+c||"[object Function]"===Object.prototype.toString.call(c)&&!1===c(b.origin))return!1;a(b)}),window.addEventListener)window[a?"addEventListener":"removeEventListener"]("message",b,!1);else window[a?"attachEvent":"detachEvent"]("onmessage",b)}catch(e){}}};var E={Z:function(){if(n.addEventListener)return function(a,c,b){a.addEventListener(c,function(a){"function"===typeof b&&b(a)},k)};if(n.attachEvent)return function(a,c,b){a.attachEvent("on"+c,function(a){"function"===typeof b&&b(a)})}}(),map:function(a,
+c){if(Array.prototype.map)return a.map(c);if(void 0===a||a===h)throw new TypeError;var b=Object(a),e=b.length>>>0;if("function"!==typeof c)throw new TypeError;for(var f=Array(e),g=0;g<e;g++)g in b&&(f[g]=c.call(c,b[g],g,b));return f},Aa:function(a,c){return this.map(a,function(a){return encodeURIComponent(a)}).join(c)}};a.Ua=E;var t={ka:3E4,N:649,ga:k,id:h,I:h,ba:function(a){if("string"===typeof a)return a=a.split("/"),a[0]+"//"+a[2]},d:h,url:h,Ca:function(){var d="http://fast.",c="?d_nsid="+a.idSyncContainerID+
+"#"+encodeURIComponent(n.location.href);this.d||(this.d="nosubdomainreturned");a.loadSSL&&(d=a.idSyncSSLUseAkamai?"https://fast.":"https://");d=d+this.d+".demdex.net/dest5.html"+c;this.I=this.ba(d);this.id="destination_publishing_iframe_"+this.d+"_"+a.idSyncContainerID;return d},wa:function(){var d="?d_nsid="+a.idSyncContainerID+"#"+encodeURIComponent(n.location.href);"string"===typeof a.z&&a.z.length&&(this.id="destination_publishing_iframe_"+(new Date).getTime()+"_"+a.idSyncContainerID,this.I=this.ba(a.z),
+this.url=a.z+d)},ca:h,G:k,M:k,v:h,hb:h,Ia:h,ib:h,L:k,w:[],Ga:[],Ha:[],da:u.k?15:100,J:[],Ea:[],aa:i,ea:k,$:function(){function a(){e=document.createElement("iframe");e.id=b.id;e.style.cssText="display: none; width: 0; height: 0;";e.src=b.url;b.Ia=i;c();document.body.appendChild(e)}function c(){E.Z(e,"load",function(){e.className="aamIframeLoaded";b.v=i;b.n()})}this.M=i;var b=this,e=document.getElementById(this.id);e?"IFRAME"!==e.nodeName?(this.id+="_2",a()):"aamIframeLoaded"!==e.className?c():(this.v=
+i,this.n()):a();this.Da=e},n:function(d){var c=this;d===Object(d)&&this.J.push(d);if((this.ea||!u.k||this.v)&&this.J.length)this.Ja(this.J.shift()),this.n();!a.idSyncDisableSyncs&&this.v&&this.w.length&&!this.L&&(this.ga||(this.ga=i,setTimeout(function(){c.da=u.k?15:150},this.ka)),this.L=i,this.fa())},Ja:function(a){var c=encodeURIComponent,b,e,f,g,h;if((b=a.H)&&b instanceof Array&&(e=b.length))for(f=0;f<e;f++)g=b[f],h=[c("ibs"),c(g.id||""),c(g.tag||""),E.Aa(g.url||[],","),c(g.ha||""),"","",g.Ba?
+"true":"false"],this.aa?this.F(h.join("|")):g.Ba&&this.xa(g,h.join("|"));this.Ea.push(a)},xa:function(d,c){a.f();var b=a.b(B),e=k,f=k,g=Math.ceil((new Date).getTime()/u.O);if(b){if(b=b.split("*"),f=this.La(b,d.id,g),e=f.ya,f=f.za,!e||!f)this.F(c),b.push(d.id+"-"+(g+Math.ceil(d.ha/60/24))),this.Fa(b),a.c(B,b.join("*"))}else this.F(c),a.c(B,d.id+"-"+(g+Math.ceil(d.ha/60/24)))},La:function(a,c,b){var e=k,f=k,g,h,j;for(h=0;h<a.length;h++)g=a[h],j=parseInt(g.split("-")[1],10),g.match("^"+c+"-")?(e=i,b<
+j?f=i:(a.splice(h,1),h--)):b>=j&&(a.splice(h,1),h--);return{ya:e,za:f}},Fa:function(a){if(a.join("*").length>this.N)for(a.sort(function(a,b){return parseInt(a.split("-")[1],10)-parseInt(b.split("-")[1],10)});a.join("*").length>this.N;)a.shift()},F:function(d){var c=encodeURIComponent;this.w.push((a.Ra?c("---destpub-debug---"):c("---destpub---"))+d)},fa:function(){var d=this,c;this.w.length?(c=this.w.shift(),a.Y.postMessage(c,this.url,this.Da.contentWindow),this.Ga.push(c),setTimeout(function(){d.fa()},
+this.da)):this.L=k},K:function(a){var c=/^---destpub-to-parent---/;"string"===typeof a&&c.test(a)&&(c=a.replace(c,"").split("|"),"canSetThirdPartyCookies"===c[0]&&(this.aa="true"===c[1]?i:k,this.ea=i,this.n()),this.Ha.push(a))},Ka:function(d){this.url===h&&(this.d="string"===typeof a.X&&a.X.length?a.X:d.d||"",this.url=this.Ca());d.H instanceof Array&&d.H.length&&(this.G=i);if((this.G||a.na)&&this.d&&"nosubdomainreturned"!==this.d&&!this.M)(j.ia||"complete"===n.readyState||"loaded"===n.readyState)&&
+this.$();"function"===typeof a.idSyncIDCallResult?a.idSyncIDCallResult(d):this.n(d);"function"===typeof a.idSyncAfterIDCallResult&&a.idSyncAfterIDCallResult(d)},va:function(d,c){return a.Sa||!d||c-d>u.ja}};a.Qa=t;0>m.indexOf("@")&&(m+="@AdobeOrg");a.marketingCloudOrgID=m;a.cookieName="AMCV_"+m;a.cookieDomain=a.oa();a.cookieDomain==l.location.hostname&&(a.cookieDomain="");a.loadSSL=0<=l.location.protocol.toLowerCase().indexOf("https");a.loadTimeout=500;a.marketingCloudServer=a.audienceManagerServer=
+"dpm.demdex.net";if(s&&"object"==typeof s){for(var C in s)!Object.prototype[C]&&(a[C]=s[C]);a.idSyncContainerID=a.idSyncContainerID||0;a.f();C=a.b(D);var F=Math.ceil((new Date).getTime()/u.O);!a.idSyncDisableSyncs&&t.va(C,F)&&(a.l(p,-1),a.c(D,F));a.getMarketingCloudVisitorID();a.getAudienceManagerLocationHint();a.getAudienceManagerBlob()}if(!a.idSyncDisableSyncs){t.wa();E.Z(window,"load",function(){var d=t;j.ia=i;(d.G||a.na)&&d.d&&"nosubdomainreturned"!==d.d&&d.url&&!d.M&&d.$()});try{a.Y.K(function(a){t.K(a.data)},
+t.I)}catch(G){}}}Visitor.getInstance=function(m,s){var a,l=window.s_c_il,j;0>m.indexOf("@")&&(m+="@AdobeOrg");if(l)for(j=0;j<l.length;j++)if((a=l[j])&&"Visitor"==a._c&&a.marketingCloudOrgID==m)return a;return new Visitor(m,s)};(function(){function m(){s.ia=a}var s=window.Visitor,a=s.la;a||(a=!0);window.addEventListener?window.addEventListener("load",m):window.attachEvent&&window.attachEvent("onload",m)})();
+
+var visitor = Visitor.getInstance("5DB5123F5245B1D20A490D45@AdobeOrg", {
+trackingServer: "metric.schwab.com", // same as s.trackingServer
+trackingServerSecure: "smetric.schwab.com", //same as s.trackingServerSecure
+marketingCloudServer: "metric.schwab.com",
+marketingCloudServerSecure: "smetric.schwab.com" //same as s.trackingServerSecure
+});/*-----------SiteCatalyst Header Script Library------------------*/
+/* Global Tag Slate Header Include for SiteCatalyst. This is shared by all sites that uses SiteCatalyst for tracking.*/
+/*Insert the primary timezone for the site (e.g For ET insert -5) */
+sc_timezone = "-5";
+/*Insert the top level domain(s) that should be tracked as internal or part of the site itself */
+sc_internalDomain = "javascript:,schwab.com," + document.location.hostname;
+
+/* Method to generate SiteCatalyst call from overlay implementation e.g. GAO*/
+function scatTagOverlay(pagename, multilevelcat, scatcat, n) {
+    if (typeof (TagParameters.Vendor.SiteCatalyst.S) != "undefined") {
+        if (typeof (TagParameters.Page) != "undefined") {
+            TagParameters.Page.Name = typeof (pagename) == "undefined" ? "" : pagename;
+            TagParameters.Page.MultiLevelCategory = typeof (multilevelcat) == "undefined" ? "" : multilevelcat;
+        }
+        //for lead event capture (if set appname/eventid/transactionid set from the overlay)
+        if (typeof (waAppName) != "undefined")
+            TagParameters.Vendor.SiteCatalyst.S.eVar29 = waAppName;
+        if (typeof (waSuccessEventId) != "undefined")
+            TagParameters.Vendor.SiteCatalyst.S.events = waSuccessEventId;
+
+        TagParameters.Vendor.SiteCatalyst.S.tl();
+    }
+}
+/* Method to set custom variable into SiteCatalyst variable for Search Events */
+function scatSearchEvent(pagename, keywords, results) {
+    if (typeof (TagParameters.Vendor.SiteCatalyst.S) != "undefined") {
+        var searchParam = typeof (waSearchParameter) == "undefined" ? "" : (waSearchParameter != null ? waSearchParameter : "");
+        TagParameters.Vendor.SiteCatalyst.S.pagename = typeof (pagename) == "undefined" ? "" : pagename;
+        TagParameters.Vendor.SiteCatalyst.S.prop27 = typeof (keywords) == "undefined" ? searchParam : keywords;
+        TagParameters.Vendor.SiteCatalyst.S.eVar27 = "D=c27";
+        TagParameters.Vendor.SiteCatalyst.S.events = TagParameters.Vendor.SiteCatalyst.S.apl(TagParameters.Vendor.SiteCatalyst.S.events, "event10", ",", 2);
+
+        if (typeof (results) && (results == "0" || results == 0)) {
+            TagParameters.Vendor.SiteCatalyst.S.events = TagParameters.Vendor.SiteCatalyst.S.apl(TagParameters.Vendor.SiteCatalyst.S.events, "event12", ",", 2);
+        }
+        if (typeof (TagParameters.Vendor.SiteCatalyst.S.t) == "function")
+            TagParameters.Vendor.SiteCatalyst.S.t();
+    }
+}
+/* Method to set custom variable into SiteCatalyst variable for Ratings Review */
+function scatSetCustom23(productname) {
+    if (typeof (TagParameters.Vendor.SiteCatalyst.S) != "undefined") {
+        // TagParameters.Vendor.SiteCatalyst.S.prop24 = typeof (productname) == "undefined" ? "" : pagename;
+        TagParameters.Vendor.SiteCatalyst.S.prop24 = typeof (productname) == "undefined" ? "" : productname + "_ReadReviews";
+        TagParameters.Vendor.SiteCatalyst.S.tl();
+    }
+}
+
+/* Common SiteCatalyst Tagging Methods for Video */
+function scatMediaOpen(mediaName, mediaLength, mediaPlayerName) {
+    TagParameters.Vendor.SiteCatalyst.S.Media.open(mediaName, mediaLength, mediaPlayerName);
+}
+function scatMediaPause(mediaName, mediaOffset) {
+    TagParameters.Vendor.SiteCatalyst.S.Media.stop(mediaName, mediaOffset);
+}
+function scatMediaPlay(mediaName, mediaOffset, mediaPlayerName, initialPlay) {
+    if (initialPlay == true) {
+        TagParameters.Vendor.SiteCatalyst.S.Media.open(mediaName, mediaOffset, mediaPlayerName);
+        TagParameters.Vendor.SiteCatalyst.S.Media.play(mediaName, 0);
+    } else {
+        TagParameters.Vendor.SiteCatalyst.S.Media.play(mediaName, mediaOffset);
+    }
+}
+function scatMediaClose(mediaName, mediaOffset) {
+    TagParameters.Vendor.SiteCatalyst.S.Media.stop(mediaName, mediaOffset);
+    TagParameters.Vendor.SiteCatalyst.S.Media.close(mediaName);
+}
+function scatMediaStop(mediaName, mediaOffset) {
+    TagParameters.Vendor.SiteCatalyst.S.Media.stop(mediaName, mediaOffset);
+}
+function scatMediaScrub(mediaName, offsetFrom, offsetTo) {
+    TagParameters.Vendor.SiteCatalyst.S.Media.stop(mediaName, offsetFrom);
+    TagParameters.Vendor.SiteCatalyst.S.Media.play(mediaName, offsetTo);
+}
+
+
+//common method to update Category and PageName
+function scatSetCategoryAndPageName(category, pagename) {
+    TagParameters.Page.Category = typeof (category) == "undefined" ? "" : category;
+    TagParameters.Page.Name = typeof (pagename) == "undefined" ? "" : TagParameters.Page.Category + "/" + pagename;
+    TagParameters.Page.Name = TagParameters.Page.Name.replace(/\/\/+/gi, "/");
+
+    if (typeof (TagParameters.Vendor.SiteCatalyst.S.t) == "function")
+        TagParameters.Vendor.SiteCatalyst.S.t();
+}
+
+
+// Path should not be  part of the name, as path and category will be extracted from TagParameters' MultiLevelCategory
+function scatSendAsync(pageName) {
+    if (typeof (TagParameters.Vendor.SiteCatalyst.S) != "undefined") {
+        if (typeof (TagParameters.Page.Name) != "undefined") {
+            TagParameters.Page.Name = typeof (pageName) == "undefined" ? "" : "/" + TagParameters.Page.MultiLevelCategory + "/" + pageName;
+            TagParameters.Page.Name = TagParameters.Page.Name.replace(/\/\/+/gi, "/");
+        }
+        if (typeof (TagParameters.Vendor.SiteCatalyst.S.t) == "function")
+            TagParameters.Vendor.SiteCatalyst.S.t();
+    }
+}
+
+// Method added to update just the ceid value should be follwed up by a method call that internally calls s.t()- for custom tracking.
+function scatUpdateCeid(ceid) {
+    if (typeof (TagParameters.Optional.Ceid) != "undefined")
+        TagParameters.Optional.Ceid = typeof (ceid) == "undefined" ? "" : ceid;
+}
+
+//Method to custom track file down loads
+function scatTrackFileDL(fileUrl) {
+    // File Downloads 
+    var lnkType = 'd';
+    TagParameters.Vendor.SiteCatalyst.S.linkTrackVars = "events,eVar10,prop10";
+    TagParameters.Vendor.SiteCatalyst.S.prop10 = TagParameters.Vendor.SiteCatalyst.S.eVar10 = fileUrl;
+    TagParameters.Vendor.SiteCatalyst.S.events = TagParameters.Vendor.SiteCatalyst.S.linkTrackEvents = "event31";
+    TagParameters.Vendor.SiteCatalyst.S.linkTrackVars = "events,eVar10,prop10";
+
+    if (typeof (TagParameters.Vendor.SiteCatalyst.S.tl) == "function") {
+        TagParameters.Vendor.SiteCatalyst.S.tl(true, lnkType, fileUrl);
+    }
+
+}
+
+// Need this intermediate function so that the values for pagename
+// are not overriden in the do_plugins method from previous TagParameters values.
+// Linktypes: 'e' for exist links, 'd' for download links, and 'o' for generic links also supports some custome link types.
+// Schwab specific link types: sch-srp: search results links.
+function scatCustomLinkTrack(lnkType, linkName) {
+    if (typeof (TagParameters.Vendor.SiteCatalyst.S) != "undefined") {
+        var scodeLinkType = 'o';
+        if (lnkType == "sch-srp" || lnkType == "SCH-SRP") {
+            TagParameters.Vendor.SiteCatalyst.S.linkTrackVars = "prop11,prop35,prop36,prop37,prop38,eVar8,eVar28,events";
+            TagParameters.Vendor.SiteCatalyst.S.eVar28 = linkName;
+            TagParameters.Vendor.SiteCatalyst.S.linkTrackEvents = "event11";
+            TagParameters.Vendor.SiteCatalyst.S.events = "event11";
+        }
+        else {
+            TagParameters.Vendor.SiteCatalyst.S.linkTrackVars = "prop11,prop35,prop36,prop37,prop38,eVar8";
+        }
+
+        if (typeof (TagParameters.Page.Name) != "undefined") {
+            TagParameters.Vendor.SiteCatalyst.S.prop35 = TagParameters.Page.Name;
+            TagParameters.Vendor.SiteCatalyst.S.prop36 = linkName;
+            TagParameters.Vendor.SiteCatalyst.S.prop37 = TagParameters.Page.Name + "|" + linkName;
+        }
+
+        if (typeof (TagParameters.Vendor.SiteCatalyst.S.tl) == "function") {
+            if (lnkType == 'd' || lnkType == 'e' || lnkType == 'o') {
+                scodeLinkType = lnkType;
+            }
+            TagParameters.Vendor.SiteCatalyst.S._hitType = "_scLV";
+            TagParameters.Vendor.SiteCatalyst.S.tl(true, scodeLinkType, linkName, null, "navigate");
+            TagParameters.Vendor.SiteCatalyst.S._hitType = "";
+        }
+    }
+}
+
+// function to track social share
+// linkName: Share Link Name.
+// Linktypes: 'e' for exist links, 'd' for download links, and 'o' for generic links.
+function scatShareLinkTrack(lnkType, linkName) {
+    if (typeof (TagParameters.Vendor.SiteCatalyst.S) != "undefined") {
+        if (typeof (TagParameters.Page.Name) != "undefined") {
+
+            TagParameters.Vendor.SiteCatalyst.S.linkTrackVars = "prop11,prop35,prop36,prop37,prop38,eVar8,eVar53";
+
+            TagParameters.Vendor.SiteCatalyst.S.prop35 = TagParameters.Page.Name;
+            TagParameters.Vendor.SiteCatalyst.S.prop36 = linkName;
+            TagParameters.Vendor.SiteCatalyst.S.prop37 = TagParameters.Page.Name + "|" + linkName;
+
+            TagParameters.Vendor.SiteCatalyst.S.linkTrackEvents = TagParameters.Vendor.SiteCatalyst.S.apl(TagParameters.Vendor.SiteCatalyst.S.linkTrackEvents, "event6", ",", 2);
+            TagParameters.Vendor.SiteCatalyst.S.eVar53 = linkName;
+            TagParameters.Vendor.SiteCatalyst.S.events = TagParameters.Vendor.SiteCatalyst.S.apl(TagParameters.Vendor.SiteCatalyst.S.events, "event6", ",", 2);
+        }
+
+        if (typeof (TagParameters.Vendor.SiteCatalyst.S.tl) == "function") {
+            TagParameters.Vendor.SiteCatalyst.S._hitType = "_scLV";
+            TagParameters.Vendor.SiteCatalyst.S.tl(true, lnkType, linkName, null, "navigate");
+            TagParameters.Vendor.SiteCatalyst.S._hitType = "";
+        }
+    }
+}
+
+//Method to track Print clicks.
+function scatPrintTrack() {
+    if (typeof (TagParameters.Vendor.SiteCatalyst.S) != "undefined") {
+        if (typeof (TagParameters.Page.Name) != "undefined") {
+            TagParameters.Vendor.SiteCatalyst.S.linkTrackVars = "prop11,prop35,prop36,prop37,prop38,eVar8,eVar54";
+            TagParameters.Vendor.SiteCatalyst.S.prop35 = TagParameters.Page.Name;
+            TagParameters.Vendor.SiteCatalyst.S.prop36 = "Print";
+            TagParameters.Vendor.SiteCatalyst.S.prop37 = s.pageName + "|" + s.prop36;
+            TagParameters.Vendor.SiteCatalyst.S.eVar54 = "Print";
+        }
+
+        if (typeof (TagParameters.Vendor.SiteCatalyst.S.tl) == "function") {
+            TagParameters.Vendor.SiteCatalyst.S._hitType = "_scLV";
+            TagParameters.Vendor.SiteCatalyst.S.tl(true, "o", "Print", null, "navigate");
+            TagParameters.Vendor.SiteCatalyst.S._hitType = "";
+        }
+    }
+}
+
+// Track the successful event of an agent joining a chat session.
+// The data element being tracked in eVar19 is a pipe-delimited value
+// of the service line, Brokerage, Banking, etc., and session ID.
+function scatChatSuccessTrack(serviceLine, sessionId) {
+    if (typeof (TagParameters.Vendor.SiteCatalyst.S) != "undefined") {
+        TagParameters.Vendor.SiteCatalyst.S.linkTrackVars = "eVar19,events";
+        TagParameters.Vendor.SiteCatalyst.S.eVar19 = serviceLine + "|" + sessionId;
+        TagParameters.Vendor.SiteCatalyst.S.linkTrackEvents = "event44";
+        TagParameters.Vendor.SiteCatalyst.S.events = "event44";
+
+        if (typeof (TagParameters.Vendor.SiteCatalyst.S.tl) == "function") {
+            TagParameters.Vendor.SiteCatalyst.S._hitType = "_scLV";
+            TagParameters.Vendor.SiteCatalyst.S.tl(true, 'o', TagParameters.Vendor.SiteCatalyst.S.eVar19);
+            TagParameters.Vendor.SiteCatalyst.S._hitType = "";
+        }
+    }
+}
+
+/* Function to bundle TagParameters values for Tagging purpose */
+(function (T) {
+    // Validate and set defaults.
+    T = T || {};
+    if (typeof (T.Vendor) != "undefined")
+        T.Vendor = T.Vendor || {};
+    if (typeof (T.Vendor.SiteCatalyst) != "undefined") {
+        T.Vendor.SiteCatalyst = T.Vendor.SiteCatalyst || {};
+        T.Vendor.SiteCatalyst.Accounts = typeof (T.Vendor.SiteCatalyst.Accounts) == "undefined" ? "No_Account" : T.Vendor.SiteCatalyst.Accounts;
+        T.Vendor.SiteCatalyst.DomainName = typeof (T.Vendor.SiteCatalyst.DomainName) == "undefined" ? "No_DomainName" : T.Vendor.SiteCatalyst.DomainName;
+        T.Vendor.SiteCatalyst.SecureDomainName = typeof (T.Vendor.SiteCatalyst.SecureDomainName) == "undefined" ? "No_SecureDomain" : T.Vendor.SiteCatalyst.SecureDomainName;
+        T.Vendor.SiteCatalyst.CodeVersion = typeof (T.Vendor.SiteCatalyst.CodeVersion) == "undefined" ? "H.27.5" : T.Vendor.SiteCatalyst.CodeVersion;
+    }
+    if (typeof (T.Page) != "undefined") {
+        T.Page = T.Page || {};
+        T.Page.Path = typeof (T.Page.Path) == "undefined" ? location.pathname : T.Page.Path;
+        T.Page.Category = typeof (T.Page.Category) == "undefined" ? "No_Category" : T.Page.Category;
+        if (T.Page.Category != null && T.Page.Category.length > 0 && T.Page.Category.substring(0, 1) != "/") {
+            T.Page.Category = "/" + T.Page.Category;
+        }
+        T.Page.UseDefaultPageName = typeof (T.Page.UseDefaultPageName) == "undefined" ? false : T.Page.UseDefaultPageName;
+        if (T.Page.UseDefaultPageName) {
+            T.Page.Name = typeof (T.Page.Name) == "undefined" ? "" : T.Page.Category + "/" + T.Page.Name;
+        }
+        else {
+            T.Page.Name = typeof (T.Page.Name) == "undefined" ? "" : T.Page.Category + "/" + T.Page.Path + "/" + T.Page.Name;
+        }
+
+        T.Page.Name = T.Page.Name.replace(/\/\/+/gi, "/");
+
+        var mlc = T.Page.Category + "/" + T.Page.Path;
+        mlc = mlc.replace(/\/\/+/gi, "/");
+        T.Page.MultiLevelCategory = typeof (T.Page.MultiLevelCategory) == "undefined" ? "No_MultiLevelCategory" : (T.Page.MultiLevelCategory != "" ? T.Page.MultiLevelCategory : mlc);
+
+        T.Page.SiteSubSection2 = typeof (T.Page.SiteSubSection2) == "undefined" ? "" : T.Page.SiteSubSection2;
+        T.Page.SiteSubSection3 = typeof (T.Page.SiteSubSection3) == "undefined" ? "" : T.Page.SiteSubSection3;
+    }
+    if (typeof (T.Tab) != "undefined") {
+        T.Tab = T.Tab || {};
+        T.Tab.RootPageName = typeof (T.Tab.RootPageName) == "undefined" ? "" : T.Tab.RootPageName;
+        T.Tab.TabNames = typeof (T.Tab.TabNames) == "undefined" ? "" : T.Tab.TabNames;
+    }
+    if (typeof (T.Optional) != "undefined") {
+        T.Optional = T.Optional || {};
+        T.Optional.Disabled = typeof (T.Optional.Disabled) == "undefined" ? false : T.Optional.Disabled;
+        T.Optional.LinkTracking = typeof (T.Optional.LinkTracking) == "undefined" ? true : T.Optional.LinkTracking;
+        T.Optional.EntryTracking = typeof (T.Optional.EntryTracking) == "undefined" ? false : T.Optional.EntryTracking;
+        T.Optional.CampaignId = typeof (T.Optional.CampaignId) == "undefined" ? "" : T.Optional.CampaignId;
+        T.Optional.Segment = typeof (T.Optional.Segment) == "undefined" ? "" : T.Optional.Segment;
+        T.Optional.UserId = typeof (T.Optional.UserId) == "undefined" ? "" : T.Optional.UserId;
+        T.Optional.ApplicationName = typeof (T.Optional.ApplicationName) == "undefined" ? "" : T.Optional.ApplicationName;
+        T.Optional.SuccessEventId = typeof (T.Optional.SuccessEventId) == "undefined" ? "" : T.Optional.SuccessEventId;
+        T.Optional.ApplicationId = typeof (T.Optional.ApplicationId) == "undefined" ? "" : T.Optional.ApplicationId;
+        T.Optional.AccountType = typeof (T.Optional.AccountType) == "undefined" ? "" : T.Optional.AccountType;
+        T.Optional.LeadType = typeof (T.Optional.LeadType) == "undefined" ? "" : T.Optional.LeadType;
+        T.Optional.Ceid = typeof (T.Optional.Ceid) == "undefined" ? "" : T.Optional.Ceid;
+        T.Optional.Cbid = typeof (T.Optional.Cbid) == "undefined" ? "" : T.Optional.Cbid;
+        T.Optional.ApplicationDetail1 = typeof (T.Optional.ApplicationDetail1) == "undefined" ? "" : T.Optional.ApplicationDetail1;
+        T.Optional.ToolName = typeof (T.Optional.ToolName) == "undefined" ? "" : T.Optional.ToolName;
+        T.Optional.ToolSuccessAction = typeof (T.Optional.ToolSuccessAction) == "undefined" ? "" : T.Optional.ToolSuccessAction;
+        T.Optional.ToolErrorDescription = typeof (T.Optional.ToolErrorDescription) == "undefined" ? "" : T.Optional.ToolErrorDescription;
+        T.Optional.OmniLanguage = typeof (T.Optional.OmniLanguage) == "undefined" ? "en-US" : T.Optional.OmniLanguage;
+        T.Optional.MoxieChatType = typeof (T.Optional.MoxieChatType) == "undefined" ? "" : T.Optional.MoxieChatType;
+        T.Optional.MoxieServiceLineId = typeof (T.Optional.MoxieServiceLineId) == "undefined" ? "" : T.Optional.MoxieServiceLineId;
+        T.Optional.ExpertInsightsContentType = typeof (T.Optional.ExpertInsightsContentType) == "undefined" ? "" : T.Optional.ExpertInsightsContentType;
+        T.Optional.AptLoad = typeof (T.Optional.AptLoad) == "undefined" ? "false" : T.Optional.AptLoad;
+        T.Optional.AudienceType = typeof (T.Optional.AudienceType) == "undefined" ? "false" : T.Optional.AudienceType;
+        T.Optional.FirmName = typeof (T.Optional.FirmName) == "undefined" ? "false" : T.Optional.FirmName;
+        T.Optional.SegmentCode = typeof (T.Optional.SegmentCode) == "undefined" ? "false" : T.Optional.SegmentCode;
+        T.Optional.Platform = typeof (T.Optional.Platform) == "undefined" ? "false" : T.Optional.Platform;
+        T.Optional.UserAgentString = typeof (T.Optional.UserAgentString) == "undefined" ? "false" : T.Optional.UserAgentString;
+        T.Optional.ContentCTA = typeof (T.Optional.ContentCTA) == "undefined" ? "" : T.Optional.ContentCTA;
+        T.Optional.CorpCustId = typeof (T.Optional.CorpCustId) == "undefined" ? "" : T.Optional.ContentCTA;
+    }
+    if (typeof (T.DefaultValues) != "undefined") {
+        T.DefaultValues.PageName = typeof (T.DefaultValues.PageName) == "undefined" ? "" : T.DefaultValues.PageName;
+        T.DefaultValues.ContentCategory = typeof (T.DefaultValues.ContentCategory) == "undefined" ? "full" : T.DefaultValues.ContentCategory;
+    }
+    if (typeof (T.CustomVariables) != "undefined") {
+        T.CustomVariables.CustomVar1 = typeof (T.CustomVariables.CustomVar1) == "undefined" ? "" : T.CustomVariables.CustomVar1;
+        T.CustomVariables.CustomVar2 = typeof (T.CustomVariables.CustomVar1) == "undefined" ? "" : T.CustomVariables.CustomVar2;
+        T.CustomVariables.CustomVar3 = typeof (T.CustomVariables.CustomVar1) == "undefined" ? "" : T.CustomVariables.CustomVar3;
+        T.CustomVariables.CustomVar4 = typeof (T.CustomVariables.CustomVar1) == "undefined" ? "" : T.CustomVariables.CustomVar4;
+    }
+    if (typeof (T.CustomEventParameters) != "undefined") {
+        T.CustomEventParameters.CustomEventVar5 = typeof (T.CustomEventParameters.CustomEventVar5) == "undefined" ? "" : T.CustomEventParameters.CustomEventVar5;
+        T.CustomEventParameters.CustomEventVar6 = typeof (T.CustomEventParameters.CustomEventVar6) == "undefined" ? "" : T.CustomEventParameters.CustomEventVar6;
+        T.CustomEventParameters.CustomEventVar7 = typeof (T.CustomEventParameters.CustomEventVar7) == "undefined" ? "" : T.CustomEventParameters.CustomEventVar7;
+        T.CustomEventParameters.CustomEventVar8 = typeof (T.CustomEventParameters.CustomEventVar8) == "undefined" ? "" : T.CustomEventParameters.CustomEventVar8;
+        T.CustomEventParameters.CustomEventVar13 = typeof (T.CustomEventParameters.CustomEventVar13) == "undefined" ? "" : T.CustomEventParameters.CustomEventVar13;
+        T.CustomEventParameters.CustomEventVar19 = typeof (T.CustomEventParameters.CustomEventVar19) == "undefined" ? (typeof (tmp) == "undefined" || tmp == null ? "" : tmp[1]) : T.CustomEventParameters.CustomEventVar19;
+        T.CustomEventParameters.CustomEventVar24 = typeof (T.CustomEventParameters.CustomEventVar24) == "undefined" ? "" : T.CustomEventParameters.CustomEventVar24;
+        T.CustomEventParameters.CustomEventVar59 = typeof (T.CustomEventParameters.CustomEventVar59) == "undefined" ? "" : T.CustomEventParameters.CustomEventVar59;
+        T.CustomEventParameters.CustomEventVar60 = typeof (T.CustomEventParameters.CustomEventVar60) == "undefined" ? "" : T.CustomEventParameters.CustomEventVar60;
+        T.CustomEventParameters.CustomEventVar61 = typeof (T.CustomEventParameters.CustomEventVar61) == "undefined" ? "" : T.CustomEventParameters.CustomEventVar61;
+        T.CustomEventParameters.CustomEventVar62 = typeof (T.CustomEventParameters.CustomEventVar62) == "undefined" ? "" : T.CustomEventParameters.CustomEventVar62;
+        T.CustomEventParameters.CustomEventVar63 = typeof (T.CustomEventParameters.CustomEventVar63) == "undefined" ? "" : T.CustomEventParameters.CustomEventVar63;
+        T.CustomEventParameters.CustomEventVar64 = typeof (T.CustomEventParameters.CustomEventVar64) == "undefined" ? "" : T.CustomEventParameters.CustomEventVar64;
+        T.CustomEventParameters.CustomEventVar65 = typeof (T.CustomEventParameters.CustomEventVar65) == "undefined" ? "" : T.CustomEventParameters.CustomEventVar65;
+        T.CustomEventParameters.CustomEventVar66 = typeof (T.CustomEventParameters.CustomEventVar66) == "undefined" ? "" : T.CustomEventParameters.CustomEventVar66;
+        T.CustomEventParameters.CustomEventVar67 = typeof (T.CustomEventParameters.CustomEventVar67) == "undefined" ? "" : T.CustomEventParameters.CustomEventVar67;
+        T.CustomEventParameters.CustomEventVar68 = typeof (T.CustomEventParameters.CustomEventVar68) == "undefined" ? "" : T.CustomEventParameters.CustomEventVar68;
+        T.CustomEventParameters.CustomEventVar69 = typeof (T.CustomEventParameters.CustomEventVar69) == "undefined" ? "" : T.CustomEventParameters.CustomEventVar69;
+        T.CustomEventParameters.CustomEventVar70 = typeof (T.CustomEventParameters.CustomEventVar70) == "undefined" ? "" : T.CustomEventParameters.CustomEventVar70;
+
+    }
+})(TagParameters);

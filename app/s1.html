@@ -1,0 +1,138 @@
+<!doctype html>
+<head>
+    <meta charset="utf-8">
+
+    <title>Google Phone Gallery</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js">
+    </script>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.8/angular.min.js">
+    </script>
+
+</head>
+<body>
+
+    <div ng-app="myApp" ng-controller="namesCtrl">
+
+        <h3> Weekly News: </h3>
+        <input type="checkbox" ng-model="myForm" autofocus="yes">
+        <!-- ng-true-value="yes" ng-false-value="no"  autofocus="yes"> -->
+
+        <div ng-show="myForm" ng-include="'email-blast.html'"></div>
+
+
+
+        <p>Type a letter in the input field:</p>
+        <p><input type="text" ng-model="test"></p>
+		
+<a href="" id="a">click here to download your file</a>
+<button onclick="myDownload()">Create file</button>
+
+
+        <ul>
+            <li ng-repeat="y in names | filter:test">
+
+                <button ng-click="myFunc()" ng-show="myForm">{{ y }}</button>
+
+            </li>
+        </ul>
+        <h2>tryit div 0</h2>
+
+        <div id="div0">
+        </div>
+
+        <h2>tryit div 1</h2>
+
+        <div id="div1">
+        </div>
+    </div>
+
+    <script>
+    // $("#div1").load('ministry.html #subpage001 div.member_attach_person > h2.member_attach_name');
+    // $("#div1").load('ministry.html #subpage001 div.member_attach_person > h2.member_attach_name');
+	// Function to download data to a file
+	function download(data, filename, type) {
+	    var a = document.createElement("a"),
+	        file = new Blob([data], {type: type});
+	    if (window.navigator.msSaveOrOpenBlob) // IE10+
+	        window.navigator.msSaveOrOpenBlob(file, filename);
+	    else { // Others
+	        var url = URL.createObjectURL(file);
+	        a.href = url;
+	        a.download = filename;
+	        document.body.appendChild(a);
+	        a.click();
+	        setTimeout(function() {
+	            document.body.removeChild(a);
+	            window.URL.revokeObjectURL(url);  
+	        }, 0); 
+	    }
+	}
+	function myDownload(data, filename, type) {
+	
+		// download('file text', 'myfilename.txt', 'text/plain');
+	// }
+    var csv = 'Name,Title\n';
+       data.forEach(function(row) {
+               csv += row.join(',');
+               csv += "\n";
+       });
+ 
+       console.log(csv);
+       var hiddenElement = document.createElement('a');
+       hiddenElement.href = 'data:text/csv;charset=utf-8,' + encodeURI(csv);
+       hiddenElement.target = '_blank';
+       hiddenElement.download = 'people.csv';
+       hiddenElement.click();
+   }
+$("#div1").load("files/schwab.html table.cost-benefit-table");
+    angular.module('myApp', []).controller('namesCtrl', function($scope) {
+        var y=[];
+        // var $scope.link =[];
+        // var $scope.names =[];
+        // Check browser support
+
+
+        var x = $("div > table > *").toArray();
+        //$("button").click(funct00ion(){
+
+        console.log(x);
+        $("#div0").append("try it: " + x.length);
+        for (i = 0; i< x.length; i++) {
+            y[i]=x[i].innerHTML;
+
+            // $scope.names[i]=x[i].innerHTML;
+            // $scope.links[i]=x[i].children();
+        }
+        $scope.names = y;
+
+        console.log($scope.names.length);
+        console.log($scope.names);
+        var x =         [
+        'Jani',
+        'Carl',
+        'Margareth',
+        'Hege',
+        'Joe',
+        'Gustav',
+        'Birgit',
+        'Mary',
+        'Kai'
+        ];
+
+  
+// select a person
+    $scope.selectEmail = function() {
+        $scope.count++;
+    }
+    });
+    // $.data();
+    // $scope.names = $.data();
+    // $("h2").forEach(function(index) {
+    //     console.log(index + ": " + $(this).text());
+    //     $("#div0").append(x[0].length);
+    // });
+</script>
+
+</body>
+</html
